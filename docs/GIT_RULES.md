@@ -38,17 +38,26 @@
 
 ## 3. 📝 Commit Message 規範
 
-格式：
+Commit Message 格式應為：`<type>(<scope>): <subject>`
 
-    <type>: <描述>
+- `<type>`: Commit 的類型。
+- `<scope>`: (可選) 本次 Commit 影響的範圍，例如模組、功能名稱。
+- `<subject>`: 簡潔地描述本次 Commit 的內容，祈使句開頭，不需句點。
 
-常用 type： - feat - fix - docs - refactor - style - test - chore
+### Type 類別說明
 
-範例：
-
-    feat: 新增使用者登入 API
-    fix: 修正 JWT 過期判定錯誤
-    docs: 更新 README 的啟動流程
+| Type       | 說明                                                               | 範例                                           |
+| :--------- | :----------------------------------------------------------------- | :--------------------------------------------- |
+| `feat`     | 新增功能 (A new feature)                                           | `feat(api): 新增使用者登入 API`                |
+| `fix`      | 修正錯誤 (A bug fix)                                               | `fix(auth): 修正 JWT 過期判定錯誤`             |
+| `docs`     | 只修改文件 (Documentation only changes)                            | `docs: 更新 README 的專案啟動說明`             |
+| `style`    | 不影響程式碼運作的調整 (例如空白、格式、補分號)                    | `style: 調整程式碼排版與多餘的空白`            |
+| `refactor` | 重構程式碼，沒有新增功能或修正錯誤                               | `refactor: 重構使用者認證模組`                 |
+| `perf`     | 改善效能的調整 (A code change that improves performance)           | `perf(db): 優化使用者查詢的 SQL 語句`           |
+| `test`     | 新增或修改測試                                                   | `test: 增加登入功能的單元測試`                 |
+| `build`    | 影響建置系統或外部依賴的變更 (例如 pip, poetry) | `build: 升級 FastAPI 版本至 0.100.0`           |
+| `ci`       | 修改 CI 設定檔或腳本 (例如 GitHub Actions)                         | `ci: 修正部署腳本中的環境變數`                 |
+| `chore`    | 其他不修改 `src` 或 `test` 的變更 (例如更新 `.gitignore`)           | `chore: 在 .gitignore 新增 log 檔案的忽略規則` |
 
 ## 4. 🔀 Pull Request（PR）規範
 
