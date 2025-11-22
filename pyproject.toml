@@ -1,0 +1,19 @@
+[project]
+name = "lineaihelper"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "final898y", email = "final898y@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.121.3",
+]
+
+[project.scripts]
+lineaihelper = "lineaihelper:main"
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
