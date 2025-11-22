@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "UV Debug: FastAPI (強制指定環境)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "fastapi",
+            
+            // 👇 關鍵在這裡：直接指定 .venv 裡面的 python 執行檔路徑
+            // 【Windows 使用者請用這一行】：
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+            
+            // 【Mac / Linux 使用者請用這一行 (把上面那行刪掉)】:
+            // "python": "${workspaceFolder}/.venv/bin/python",
+
+            "args": [
+                "dev",
+                "src/lineaihelper/main.py"
+            ],
+            "jinja": true,
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        }
+    ]
+}
