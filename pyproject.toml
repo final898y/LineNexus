@@ -9,10 +9,13 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "fastapi[standard]>=0.121.3",
+    # 註: fastapi[standard] 已經包含了 uvicorn，所以不需要額外寫 "uvicorn"
 ]
 
 [project.scripts]
-lineaihelper = "lineaihelper:main"
+# 格式: 指令名稱 = "套件資料夾.檔案名:函式名"
+# 這行設定後，輸入 `uv run dev` 就會去執行 lineaihelper/main.py 裡面的 start() 函式
+dev = "lineaihelper.main:start"
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
