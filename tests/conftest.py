@@ -1,13 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
-
 from lineaihelper.main import app
-
 
 @pytest.fixture
 def client():
     """
-    建立一個共用的 TestClient fixture。
-    這樣每個測試函式只需要請求 `client` 參數即可使用。
+    建立一個支援 lifespan 的 TestClient fixture。
     """
-    return TestClient(app)
+    # 使用 with 語句確保 FastAPI 的 lifespan (startup/shutdown) 被執行
+    with TestClient(app) as c:
+        yield c
