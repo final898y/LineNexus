@@ -10,6 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "fastapi[standard]>=0.121.3",
     # 註: fastapi[standard] 已經包含了 uvicorn，所以不需要額外寫 "uvicorn"
+    "loguru>=0.7.3",
 ]
 
 [project.scripts]
@@ -20,3 +21,9 @@ dev = "lineaihelper.main:start"
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
 build-backend = "uv_build"
+
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.14",
+]
