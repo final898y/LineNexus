@@ -49,3 +49,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+# AI settings & rules
+AGENT.md
+.gemini/

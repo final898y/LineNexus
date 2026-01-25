@@ -1,109 +1,109 @@
-# 📘 Git 專案規範（Side Project 專用）
+# 📘 Git 專案協作規範
 
-> 本文件提供此專案的 Git 工作流程、分支規範、Commit 準則、PR
-> 流程與常見注意事項。\
-> 目標是讓專案在多人或長期維護時保持乾淨、可讀、易於協作。
+本文件定義了本專案的 Git 工作流程、分支策略、Commit 準則與協作規範。
+目標是確保專案在人類開發者與 **AI Agent** 協作時，代碼庫保持乾淨、可追溯且符合標準。
 
-## 1. 🧭 工作流程（每日操作指引）
+---
 
-### ✔️ 開始工作前
+## 1. 🤖 AI Agent 操作指引 (AI-Specific Guidelines)
 
-    git checkout develop
-    git pull origin develop
+**AI Agent 在執行任何 Git 操作前，必須嚴格遵守以下流程，以確保變更內容的正確性。**
 
-### ✔️ 開新功能分支
+### 1.1. 提交前的確認 (Pre-Commit Check)
+AI Agent **不能**僅依賴記憶或假設來撰寫 Commit Message，必須實際檢查檔案變更。
 
-    git checkout -b feature/功能名稱
+1.  **檢查狀態**: 執行 `git status` 確認哪些檔案被修改。
+2.  **暫存變更**: 執行 `git add <file>` 或 `git add .`。
+3.  **檢查差異 (關鍵步驟)**:
+    *   執行 `git diff --staged` (或 `git diff --cached`)。
+    *   **必須讀取並分析** diff 的輸出內容，確認變更邏輯與預期相符。
+4.  **生成訊息**: 根據 diff 的內容，撰寫符合 Conventional Commits 規範的訊息（包含細項清單）。
 
-### ✔️ 提交 Commit
+### 1.2. 禁止行為
+*   🚫 **禁止推測**: 不要在未執行 `git diff` 的情況下直接 Commit。
+*   🚫 **禁止盲目推送**: 除非使用者明確要求，否則不要自動執行 `git push`。
+*   🚫 **禁止提交機密**: 嚴格檢查是否包含 `.env` 或 API Key。
 
-    git add .
-    git commit -m "feat: 新增登入 API"
+---
 
-### ✔️ 推送到遠端
+## 2. 🌿 分支策略 (Branching Strategy)
 
-    git push origin feature/功能名稱
+本專案採用簡化的 Git Flow 策略。
 
-### ✔️ 發 PR（Pull Request）
+*   **main**: 正式發布分支。
+*   **develop**: 日常開發主幹。
+*   **feature/***: 新功能開發。
+*   **bugfix/***: 一般錯誤修復。
+*   **hotfix/***: 緊急修復線上問題。
 
-在 GitHub / GitLab 建立 PR → 指向 `develop`。
-
-## 2. 🌿 分支策略
-
-    main       → 正式版（部署）
-    develop    → 日常開發主線
-    feature/*  → 新功能
-    bugfix/*   → 修 bug
-    hotfix/*   → 緊急修正式機問題
+---
 
 ## 3. 📝 Commit Message 規範
 
-Commit Message 格式應為：`<type>(<scope>): <subject>`
+Commit Message 應包含清晰的主旨與詳細的變更清單。
 
-- `<type>`: Commit 的類型。
-- `<scope>`: (可選) 本次 Commit 影響的範圍，例如模組、功能名稱。
-- `<subject>`: 簡潔地描述本次 Commit 的內容，祈使句開頭，不需句點。
+### 3.1. 訊息格式 (Message Format)
 
-### Type 類別說明
+```text
+<type>(<scope>): <subject>
 
-| Type       | 說明                                                               | 範例                                           |
-| :--------- | :----------------------------------------------------------------- | :--------------------------------------------- |
-| `feat`     | 新增功能 (A new feature)                                           | `feat(api): 新增使用者登入 API`                |
-| `fix`      | 修正錯誤 (A bug fix)                                               | `fix(auth): 修正 JWT 過期判定錯誤`             |
-| `docs`     | 只修改文件 (Documentation only changes)                            | `docs: 更新 README 的專案啟動說明`             |
-| `style`    | 不影響程式碼運作的調整 (例如空白、格式、補分號)                    | `style: 調整程式碼排版與多餘的空白`            |
-| `refactor` | 重構程式碼，沒有新增功能或修正錯誤                               | `refactor: 重構使用者認證模組`                 |
-| `perf`     | 改善效能的調整 (A code change that improves performance)           | `perf(db): 優化使用者查詢的 SQL 語句`           |
-| `test`     | 新增或修改測試                                                   | `test: 增加登入功能的單元測試`                 |
-| `build`    | 影響建置系統或外部依賴的變更 (例如 pip, poetry) | `build: 升級 FastAPI 版本至 0.100.0`           |
-| `ci`       | 修改 CI 設定檔或腳本 (例如 GitHub Actions)                         | `ci: 修正部署腳本中的環境變數`                 |
-| `chore`    | 其他不修改 `src` 或 `test` 的變更 (例如更新 `.gitignore`)           | `chore: 在 .gitignore 新增 log 檔案的忽略規則` |
+- 變更細項說明 1
+- 變更細項說明 2
+- 修正了某某邏輯
+```
 
-## 4. 🔀 Pull Request（PR）規範
+*   **主旨 (Subject)**: 簡短描述變更核心內容，不加句號。
+*   **內容 (Body)**: **強烈建議使用清單符號 `-`**。當變更包含多個檔案或邏輯調整時，必須列出細項說明，並與主旨之間保留一格空行。
 
-PR Template：
+### 3.2. Type 類別說明與範例
 
-    ## Summary
-    ## Changes
-    ## Test
-    ## Others
+*   **feat**: 新增功能 (New Feature)
+    *   範例:
+        ```text
+        feat(api): 實作股票查詢介面
 
-原則： - 小 PR（150 行內） - 自我檢查一次再送審
+        - 新增 /callback Webhook 端點
+        - 整合 yfinance 資料抓取邏輯
+        - 加入初步的錯誤處理機制
+        ```
+*   **fix**: 修補 Bug (Bug Fix)
+    *   範例:
+        ```text
+        fix(parser): 修正代碼解析溢位問題
 
-## 5. 🚫 .gitignore（Python + FastAPI）
+        - 調整正規表達式以支援多位數代碼
+        - 修正 null 值處理不當導致的崩潰
+        ```
+*   **docs**: 僅修改文件 (Documentation)
+*   **style**: 格式調整 (空白、縮排、分號，不影響運作)
+*   **refactor**: 重構程式碼 (無新增功能或修復 Bug)
+*   **perf**: 效能優化
+*   **test**: 增加或修改測試
+*   **build/ci**: 影響建置或 CI/CD 流程
+*   **chore**: 其他雜項 (更新 .gitignore 等)
 
-    __pycache__/
-    *.py[cod]
-    venv/
-    .venv/
-    .env
-    .DS_Store
-    *.log
-    .vscode/
-    .idea/
-    *.sqlite3
-    .pytest_cache/
-    .coverage
-    htmlcov/
-    build/
-    dist/
-    *.egg-info/
-    poetry.lock
-    uv.lock
-    .uv/
+---
 
-## 6. ⚠️ 常見注意事項
+## 4. 🔄 開發工作流程 (Workflow)
 
--   不要 commit `.env`
--   不要 commit venv
--   不要在 `main` 開發
--   避免巨型 commit / 巨型 PR
+### 4.1. 提交變更步驟
+1.  `git add .`
+2.  **確認變更 (AI 必做)**: `git diff --staged`
+3.  **撰寫並提交**: `git commit` (確保包含 `-` 開頭的細項說明)
 
-## 7. 🚀 Git Cheat Sheet
+---
 
-    git checkout develop
-    git pull
-    git checkout -b feature/x
-    git add .
-    git commit -m "feat: xxx"
-    git push origin feature/x
+## 5. 🚫 忽略檔案設定 (.gitignore)
+
+*   **安全性**: `.env`, `*.key`
+*   **環境**: `venv/`, `.venv/`
+*   **快取**: `__pycache__/`, `*.pyc`
+*   **日誌**: `logs/`, `*.log`
+
+---
+
+## 6. 🚀 Git Cheat Sheet
+
+*   **查看狀態**: `git status`
+*   **查看暫存差異**: `git diff --staged`
+*   **檢視歷史**: `git log --oneline -n 5`
