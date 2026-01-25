@@ -50,6 +50,5 @@ build/
 dist/
 *.egg-info/
 
-# AI settings & rules
-AGENT.md
+# AI Personal Settings
 .gemini/
