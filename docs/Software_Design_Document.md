@@ -387,7 +387,55 @@ src/lineaihelper/
 
 ---
 
-## 8. 未來工作與藍圖
+## 8. 測試策略 (Testing Strategy)
+
+為了確保系統穩定性與功能正確性，本專案採用自動化測試流程。
+
+### 8.1. 測試工具
+
+*   **Pytest**: 主要的測試框架與執行器，支援豐富的插件生態。
+*   **FastAPI TestClient**: 用於同步測試 API 端點，直接整合於 FastAPI。
+*   **HTTPX**: 用於非同步測試 (Async Tests)，模擬真實的非同步請求環境。
+
+### 8.2. 測試層級
+
+1.  **單元測試 (Unit Tests)**:
+    *   針對 `domain` 與 `application` 層的業務邏輯進行測試。
+    *   Mock 外部依賴（如 yfinance, Gemini API），專注於內部邏輯驗證。
+2.  **整合測試 (Integration Tests)**:
+    *   針對 API 端點 (`routers`) 進行測試。
+    *   使用 `TestClient` 或 `httpx.AsyncClient` 發送請求，驗證 HTTP 回應碼與 JSON 結構。
+    *   測試資料庫互動（建議使用測試專用的資料庫容器或 SQLite）。
+
+### 8.3. 測試目錄結構
+
+建議將測試程式碼放置於專案根目錄的 `tests/` 資料夾中，並保持與源碼類似的結構：
+
+```text
+tests/
+├── conftest.py             # Pytest 共用設定與 Fixtures (例如測試客戶端、Mock 物件)
+├── unit/                   # 單元測試
+│   ├── test_stock_service.py
+│   └── test_ai_service.py
+└── integration/            # 整合測試
+    └── test_api_endpoints.py
+```
+
+### 8.4. 執行測試
+
+使用 `uv` 執行測試指令：
+
+```bash
+# 執行所有測試
+uv run pytest
+
+# 產生覆蓋率報告 (需安裝 pytest-cov)
+uv run pytest --cov=src
+```
+
+---
+
+## 9. 未來工作與藍圖
 
 以下為專案未來可能的功能擴展方向：
 
@@ -400,7 +448,7 @@ src/lineaihelper/
 
 ---
 
-## 9. 附錄
+## 10. 附錄
 
 ### 9.1. 環境變數說明
 

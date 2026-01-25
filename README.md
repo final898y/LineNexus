@@ -43,6 +43,8 @@ graph TD
 *   **AI 模型**: google-generativeai
 *   **套件管理**: uv
 *   **Web 伺服器**: Uvicorn (via FastAPI)
+*   **日誌**: Loguru
+*   **測試**: Pytest
 
 ## 環境設置
 
@@ -98,6 +100,48 @@ graph TD
     LINE_CHANNEL_SECRET="YOUR_LINE_CHANNEL_SECRET"
     GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
     ```
+
+## 日誌與測試 (Logging & Testing)
+
+### 日誌系統 (Loguru)
+本專案使用 `loguru` 進行日誌管理，支援自動輪換 (Rotation) 與壓縮。
+*   **日誌位置**: 專案根目錄下的 `logs/` 資料夾。
+*   **檔案格式**: `lineaihelper_{YYYY-MM-DD}.log`
+*   **設定檔**: `src/lineaihelper/logging_config.py`
+
+### 自動化測試 (Pytest)
+專案包含完整的測試架構，使用 `pytest` 與 `TestClient`。
+
+**執行測試**:
+```bash
+uv run pytest
+```
+
+**產生覆蓋率報告**:
+```bash
+uv run pytest --cov=src
+```
+
+## 專案結構 (Project Structure)
+
+```text
+LineAiHelper/
+├── .vscode/                # VS Code 設定 (Formatter, Linter)
+├── docs/                   # 專案文件 (架構設計, 開發計畫)
+├── logs/                   # (自動產生) 應用程式日誌
+├── src/
+│   └── lineaihelper/
+│       ├── __init__.py
+│       ├── main.py         # 應用程式入口
+│       └── logging_config.py # 日誌配置
+├── tests/                  # 測試程式碼
+│   ├── conftest.py         # Pytest Fixtures
+│   └── test_main.py        # API 整合測試
+├── .env.example            # 環境變數範例
+├── pyproject.toml          # 專案依賴與設定
+├── ruff.toml               # Linter/Formatter 設定
+└── README.md               # 專案說明文件
+```
 
 ## 如何運行
 
