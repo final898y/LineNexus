@@ -36,7 +36,7 @@ graph TD
 
 ## 技術棧 (Technology Stack)
 
-*   **後端**: Python 3.9+
+*   **後端**: Python 3.14+
 *   **Web 框架**: FastAPI
 *   **LINE Bot**: line-bot-sdk
 *   **股票資料**: yfinance

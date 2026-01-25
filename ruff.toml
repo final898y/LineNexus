@@ -1,5 +1,4 @@
-# 設定目標 Python 版本 (配合 README 的 3.9+)
-target-version = "py39"
+target-version = "py314"
 # 行長度 (PEP 8 嚴格建議 79，但現代標準如 Black/Ruff 預設為 88，較適合現代寬螢幕開發)
 line-length = 88
 
