@@ -21,6 +21,7 @@ venv/
 # Editor settings
 .vscode/*
 !.vscode/launch.json
+!.vscode/settings.json
 .idea/
 
 # Byte-compiled / optimized / DLL files
