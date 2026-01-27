@@ -34,14 +34,14 @@
 ## 3. 任務清單 (Task List)
 
 ### Phase 1: 基礎連通與 MVP 骨架 (Hello LineNexus)
-- [ ] **1.1. 建立基礎 Webhook**
+- [x] **1.1. 建立基礎 Webhook**
   - 實作 `/callback` 路由，能接收並原樣回傳 (Echo) 使用者訊息。
   - 使用 `ngrok` 完成本地與 LINE Platform 的連通。
-- [ ] **1.2. 實作簡易指令解析**
+- [x] **1.2. 實作簡易指令解析**
   - 在 `main.py` 中撰寫簡單判斷，區分「指令文字」與「一般文字」。
-- [ ] **1.3. 串接 Stock MVP 流程**
+- [x] **1.3. 串接 Stock MVP 流程**
   - 整合 `yfinance` 獲取數據。
-  - 整合 `Gemini API` 進行簡單分析。
+  - 整合 `Gemini API` (google-genai) 進行簡單分析。
   - 確保 `/stock [代碼]` 能成功回傳。
 
 ### Phase 2: 指令分發器與服務模組化 (The Hub Architecture)

@@ -49,7 +49,7 @@ graph TD
 *   **Web 框架**: FastAPI
 *   **LINE Bot**: line-bot-sdk
 *   **股票資料**: yfinance
-*   **AI 模型**: google-generativeai
+*   **AI 模型**: google-genai
 *   **套件管理**: uv
 *   **Web 伺服器**: Uvicorn
 *   **日誌**: Loguru
