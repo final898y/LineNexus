@@ -82,13 +82,43 @@ async def callback(request: Request):
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event: MessageEvent):
     """
-    處理文字訊息事件 (MVP Echo)
+    處理文字訊息事件 (Simple Command Dispatcher)
     """
-    user_text = event.message.text
+    user_text = event.message.text.strip()
     logger.info(f"收到訊息: {user_text}")
 
     # 從 app.state 取得全域的非同步 API 物件
     line_bot_api: AsyncMessagingApi = app.state.line_bot_api
+
+    # 簡易指令解析 (1.2)
+    reply_text = ""
+    if user_text.startswith("/"):
+        parts = user_text.split(" ", 1)
+        command = parts[0].lower()
+        args = parts[1] if len(parts) > 1 else ""
+
+        if command == "/stock":
+            if not args:
+                reply_text = "請提供股票代碼，例如：/stock 2330"
+            else:
+                reply_text = f"收到股票分析指令，代碼：{args} (功能開發中)"
+        elif command == "/chat":
+            if not args:
+                reply_text = "請輸入聊天內容，例如：/chat 你好"
+            else:
+                reply_text = f"收到 AI 聊天指令：{args} (功能開發中)"
+        elif command == "/help":
+            reply_text = (
+                "【LineNexus 指令列表】\n"
+                "/stock [代碼] - 查詢股票資訊\n"
+                "/chat [內容] - 與 AI 對話\n"
+                "/help - 顯示此說明"
+            )
+        else:
+            reply_text = f"未知指令：{command}，請輸入 /help 查看說明。"
+    else:
+        # 非指令文字：目前維持 Echo
+        reply_text = f"LineNexus (Async) 收到：{user_text}"
 
     # 定義一個非同步任務來發送回覆
     async def send_reply():
@@ -96,7 +126,7 @@ def handle_message(event: MessageEvent):
             await line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=f"LineNexus (Async) 收到：{user_text}")],
+                    messages=[TextMessage(text=reply_text)],
                 )
             )
         except Exception as e:
