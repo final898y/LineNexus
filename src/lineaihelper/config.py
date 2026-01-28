@@ -5,6 +5,11 @@ class Settings(BaseSettings):
     """
     應用程式設定，透過 pydantic-settings 自動從 .env 讀取。
     """
+    # 伺服器設定
+    APP_HOST: str = "0.0.0.0"
+    APP_PORT: int = 8000
+    DEBUG: bool = False
+
     # LINE Bot 設定
     LINE_CHANNEL_ACCESS_TOKEN: str = "your_token"
     LINE_CHANNEL_SECRET: str = "your_secret"
