@@ -1,63 +1,55 @@
-from unittest.mock import AsyncMock, MagicMock, patch
-
+from unittest.mock import AsyncMock, MagicMock
 import pytest
-
 from lineaihelper.dispatcher import CommandDispatcher
-
-
-@pytest.mark.asyncio
-async def test_dispatch_help():
-    mock_gemini = MagicMock()
-    dispatcher = CommandDispatcher(mock_gemini)
-
-    response = await dispatcher.parse_and_execute("/help")
-    assert "[LineNexus Commands]" in response
-    assert "/stock" in response
-
+from lineaihelper.services.base_service import BaseService
 
 @pytest.mark.asyncio
-async def test_dispatch_echo():
+async def test_dispatch_routing_stock():
+    # Arrange
     mock_gemini = MagicMock()
     dispatcher = CommandDispatcher(mock_gemini)
+    
+    # 替換 dispatcher 內部的 service 實例為 Mock
+    mock_stock_service = AsyncMock(spec=BaseService)
+    mock_stock_service.execute.return_value = "Mock Stock Response"
+    dispatcher.services["/stock"] = mock_stock_service
 
-    response = await dispatcher.parse_and_execute("Hello")
-    assert "LineNexus (Async) received: Hello" in response
+    # Act
+    response = await dispatcher.parse_and_execute("/stock 2330")
 
+    # Assert
+    assert response == "Mock Stock Response"
+    mock_stock_service.execute.assert_called_once_with("2330")
 
 @pytest.mark.asyncio
-async def test_dispatch_chat_success():
+async def test_dispatch_routing_chat():
+    # Arrange
     mock_gemini = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = "AI Response"
-    mock_gemini.aio.models.generate_content = AsyncMock(return_value=mock_response)
-
     dispatcher = CommandDispatcher(mock_gemini)
+    
+    mock_chat_service = AsyncMock(spec=BaseService)
+    mock_chat_service.execute.return_value = "Mock Chat Response"
+    dispatcher.services["/chat"] = mock_chat_service
+
+    # Act
     response = await dispatcher.parse_and_execute("/chat hello")
 
-    assert response == "AI Response"
-    mock_gemini.aio.models.generate_content.assert_called_once()
-
+    # Assert
+    assert response == "Mock Chat Response"
+    mock_chat_service.execute.assert_called_once_with("hello")
 
 @pytest.mark.asyncio
-async def test_dispatch_stock_success():
+async def test_dispatch_unknown_command():
     mock_gemini = MagicMock()
-    mock_response = MagicMock()
-    mock_response.text = "Stock Analysis"
-    mock_gemini.aio.models.generate_content = AsyncMock(return_value=mock_response)
-
     dispatcher = CommandDispatcher(mock_gemini)
 
-    with patch("lineaihelper.dispatcher.yf.Ticker") as mock_ticker:
-        mock_ticker.return_value.info = {
-            "longName": "Test Stock",
-            "currentPrice": 100,
-            "trailingPE": 10,
-            "trailingEps": 5,
-            "longBusinessSummary": "Summary",
-        }
+    response = await dispatcher.parse_and_execute("/foobar")
+    assert "Unknown command: /foobar" in response
 
-        response = await dispatcher.parse_and_execute("/stock 2330")
+@pytest.mark.asyncio
+async def test_dispatch_no_command_echo():
+    mock_gemini = MagicMock()
+    dispatcher = CommandDispatcher(mock_gemini)
 
-        assert response == "Stock Analysis"
-        mock_ticker.assert_called_once_with("2330.TW")
-        mock_gemini.aio.models.generate_content.assert_called_once()
+    response = await dispatcher.parse_and_execute("Just some text")
+    assert "LineNexus (Async) received: Just some text" in response
