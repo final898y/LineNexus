@@ -3,8 +3,8 @@ from typing import Dict
 from google import genai
 from loguru import logger
 
-from lineaihelper.services import BaseService, ChatService, HelpService, StockService
 from lineaihelper.exceptions import LineNexusError
+from lineaihelper.services import BaseService, ChatService, HelpService, StockService
 
 
 class CommandDispatcher:

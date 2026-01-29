@@ -1,7 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
+
+from lineaihelper.exceptions import ExternalAPIError, ServiceError
 from lineaihelper.services.chat_service import ChatService
-from lineaihelper.exceptions import ServiceError, ExternalAPIError
+
 
 @pytest.mark.asyncio
 async def test_chat_service_execute_success():
@@ -14,12 +17,14 @@ async def test_chat_service_execute_success():
     response = await service.execute("Hi")
     assert response == "Hello!"
 
+
 @pytest.mark.asyncio
 async def test_chat_service_empty_args():
     service = ChatService(MagicMock())
     with pytest.raises(ServiceError) as excinfo:
         await service.execute("")
     assert "請提供聊天內容" in str(excinfo.value)
+
 
 @pytest.mark.asyncio
 async def test_chat_service_quota_error():

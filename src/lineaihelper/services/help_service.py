@@ -9,4 +9,3 @@ class HelpService(BaseService):
             "/chat [content] - AI chat\n"
             "/help - Show this help"
         )
-

@@ -49,6 +49,7 @@ handler = WebhookHandler(settings.LINE_CHANNEL_SECRET)
 
 # --- 異常處理層 (Exception Handling Layer) ---
 
+
 @app.exception_handler(InvalidSignatureError)
 async def invalid_signature_handler(request: Request, exc: InvalidSignatureError):
     logger.error("無效的 LINE 簽章")
@@ -59,13 +60,11 @@ async def invalid_signature_handler(request: Request, exc: InvalidSignatureError
 async def global_exception_handler(request: Request, exc: Exception):
     """全域異常攔截，作為最後一道防線"""
     logger.exception(f"全域攔截到未處理異常: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal Server Error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
 # --- 路由與控制器 (Routes & Controllers) ---
+
 
 @app.get("/")
 def read_root():

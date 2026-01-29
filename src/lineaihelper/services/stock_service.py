@@ -1,10 +1,10 @@
 import asyncio
+
 import yfinance as yf
 from google import genai
-from loguru import logger
 
+from lineaihelper.exceptions import ExternalAPIError, ServiceError
 from lineaihelper.services.base_service import BaseService
-from lineaihelper.exceptions import ServiceError, ExternalAPIError
 
 
 class StockService(BaseService):
@@ -24,11 +24,15 @@ class StockService(BaseService):
             try:
                 ticker = yf.Ticker(symbol)
                 info = ticker.info
-                if not info or ("regularMarketPrice" not in info and "currentPrice" not in info):
+                if not info or (
+                    "regularMarketPrice" not in info and "currentPrice" not in info
+                ):
                     return None
                 return info
             except Exception as e:
-                raise ExternalAPIError(f"抓取股票 {symbol} 資料時發生錯誤", original_exception=e)
+                raise ExternalAPIError(
+                    f"抓取股票 {symbol} 資料時發生錯誤", original_exception=e
+                ) from e
 
         info = await asyncio.to_thread(fetch_data)
         if not info:
@@ -63,4 +67,6 @@ class StockService(BaseService):
         except Exception as e:
             if isinstance(e, ExternalAPIError):
                 raise
-            raise ExternalAPIError("AI 分析目前無法使用，請稍後再試。", original_exception=e)
+            raise ExternalAPIError(
+                "AI 分析目前無法使用，請稍後再試。", original_exception=e
+            ) from e
