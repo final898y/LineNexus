@@ -1,7 +1,9 @@
 import asyncio
+from typing import Any, cast
 
 import yfinance as yf
 from google import genai
+from loguru import logger
 
 from lineaihelper.exceptions import ExternalAPIError, ServiceError
 from lineaihelper.services.base_service import BaseService
@@ -20,10 +22,10 @@ class StockService(BaseService):
             symbol = f"{symbol}.TW"
 
         # 1. 抓取資料
-        def fetch_data():
+        def fetch_data() -> dict[str, Any] | None:
             try:
                 ticker = yf.Ticker(symbol)
-                info = ticker.info
+                info = cast(dict[str, Any], ticker.info)
                 if not info or (
                     "regularMarketPrice" not in info and "currentPrice" not in info
                 ):

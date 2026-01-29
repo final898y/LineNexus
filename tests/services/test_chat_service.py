@@ -7,7 +7,7 @@ from lineaihelper.services.chat_service import ChatService
 
 
 @pytest.mark.asyncio
-async def test_chat_service_execute_success():
+async def test_chat_service_execute_success() -> None:
     mock_gemini = MagicMock()
     mock_response = MagicMock()
     mock_response.text = "Hello!"
@@ -19,7 +19,7 @@ async def test_chat_service_execute_success():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_empty_args():
+async def test_chat_service_empty_args() -> None:
     service = ChatService(MagicMock())
     with pytest.raises(ServiceError) as excinfo:
         await service.execute("")
@@ -27,7 +27,7 @@ async def test_chat_service_empty_args():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_quota_error():
+async def test_chat_service_quota_error() -> None:
     mock_gemini = MagicMock()
     mock_gemini.aio.models.generate_content.side_effect = Exception("quota exceeded")
     service = ChatService(mock_gemini)

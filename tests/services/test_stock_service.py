@@ -7,7 +7,7 @@ from lineaihelper.services.stock_service import StockService
 
 
 @pytest.mark.asyncio
-async def test_stock_service_execute_success():
+async def test_stock_service_execute_success() -> None:
     mock_gemini = MagicMock()
     mock_response = MagicMock()
     mock_response.text = "Stock Analysis Result"
@@ -25,7 +25,7 @@ async def test_stock_service_execute_success():
 
 
 @pytest.mark.asyncio
-async def test_stock_service_no_args():
+async def test_stock_service_no_args() -> None:
     mock_gemini = MagicMock()
     service = StockService(mock_gemini)
 
@@ -35,7 +35,7 @@ async def test_stock_service_no_args():
 
 
 @pytest.mark.asyncio
-async def test_stock_service_not_found():
+async def test_stock_service_not_found() -> None:
     mock_gemini = MagicMock()
     service = StockService(mock_gemini)
 
@@ -47,7 +47,7 @@ async def test_stock_service_not_found():
 
 
 @pytest.mark.asyncio
-async def test_stock_service_ai_error():
+async def test_stock_service_ai_error() -> None:
     mock_gemini = MagicMock()
     mock_gemini.aio.models.generate_content.side_effect = Exception("Gemini Down")
     service = StockService(mock_gemini)

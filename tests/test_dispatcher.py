@@ -8,7 +8,7 @@ from lineaihelper.services.base_service import BaseService
 
 
 @pytest.mark.asyncio
-async def test_dispatch_handling_service_error():
+async def test_dispatch_handling_service_error() -> None:
     # Arrange
     mock_gemini = MagicMock()
     dispatcher = CommandDispatcher(mock_gemini)
@@ -26,7 +26,7 @@ async def test_dispatch_handling_service_error():
 
 
 @pytest.mark.asyncio
-async def test_dispatch_handling_unexpected_error():
+async def test_dispatch_handling_unexpected_error() -> None:
     # Arrange
     mock_gemini = MagicMock()
     dispatcher = CommandDispatcher(mock_gemini)
@@ -44,7 +44,7 @@ async def test_dispatch_handling_unexpected_error():
 
 
 @pytest.mark.asyncio
-async def test_dispatch_routing_success():
+async def test_dispatch_routing_success() -> None:
     mock_gemini = MagicMock()
     dispatcher = CommandDispatcher(mock_gemini)
 

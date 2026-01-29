@@ -33,10 +33,10 @@
 
 *   **第一階段：連通性 (The Connectivity)** - *Completed*
     *   目標：建立與 LINE Platform 的連線，完成 Hello World。
-*   **第二階段：模組化 (The Modularization)** - *Current*
+*   **第二階段：模組化 (The Modularization)** - *Completed*
     *   目標：建立 Service 層與 Dispatcher，分離職責。
-    *   重點：確保每個 Service 都有獨立的單元測試。
-*   **第三階段：持久化 (The Persistence)**
+    *   重點：確保每個 Service 都有獨立的單元測試與嚴格型別。
+*   **第三階段：持久化 (The Persistence)** - *Current*
     *   目標：引入資料庫 (PostgreSQL)，記錄對話與使用者狀態。
     *   重點：使用 Repository Pattern 隔離資料庫操作，方便測試 Mock。
 *   **第四階段：部署與維運 (Deployment & Ops)**
@@ -63,6 +63,9 @@
 - [x] **2.3. 增強錯誤處理機制**
   - 在 Service 層統一捕捉 Exception 並回傳友善錯誤訊息。
   - **DoD**: 增加測試案例模擬 API 失敗的情境。
+- [x] **2.4. 靜態型別強化 (Static Type Safety)**
+  - 導入 `mypy` 並啟用 `pydantic.mypy` 插件。
+  - **DoD**: 全專案標註型別並通過 `uv run mypy .` 檢查。
 
 ### Phase 3: 資料持久化與日誌 (Persistence & Logging)
 - [ ] **3.1. 結構化日誌導入**

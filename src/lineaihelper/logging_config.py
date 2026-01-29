@@ -3,10 +3,9 @@ import sys
 from loguru import logger
 
 
-def setup_logging():
+def setup_logging() -> None:
     """
-    配置 Loguru 日誌系統。
-    包含控制台輸出與檔案儲存，支援日誌輪換、壓縮與 UTF-8 編碼。
+    配置結構化日誌。
     """
     # 移除 Loguru 預設的處理器
     logger.remove()
