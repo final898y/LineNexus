@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from google import genai
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
@@ -29,40 +30,45 @@ async def lifespan(app: FastAPI):
     """
     FastAPI 生命週期管理：在啟動時初始化非同步用戶端與分發器，關閉時釋放資源。
     """
-    # 啟動時初始化 LINE Client
     configuration = Configuration(access_token=settings.LINE_CHANNEL_ACCESS_TOKEN)
     async_api_client = AsyncApiClient(configuration)
     app.state.line_bot_api = AsyncMessagingApi(async_api_client)
 
-    # 初始化 Gemini Client 與 Dispatcher
     gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
     app.state.dispatcher = CommandDispatcher(gemini_client)
 
     logger.info("LINE 用戶端與指令分發器已初始化")
-
     yield
-
-    # 關閉時釋放
     await async_api_client.close()
     logger.info("LINE 非同步用戶端已關閉")
 
 
-# 建立 FastAPI 應用程式實例，並注入 lifespan
 app = FastAPI(lifespan=lifespan)
-
-# WebhookHandler 仍然使用同步方式解析簽章
 handler = WebhookHandler(settings.LINE_CHANNEL_SECRET)
 
+
+# --- 異常處理層 (Exception Handling Layer) ---
 
 @app.exception_handler(InvalidSignatureError)
 async def invalid_signature_handler(request: Request, exc: InvalidSignatureError):
     logger.error("無效的 LINE 簽章")
-    return HTTPException(status_code=400, detail="Invalid signature")
+    return JSONResponse(status_code=400, content={"detail": "Invalid signature"})
 
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全域異常攔截，作為最後一道防線"""
+    logger.exception(f"全域攔截到未處理異常: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"}
+    )
+
+
+# --- 路由與控制器 (Routes & Controllers) ---
 
 @app.get("/")
 def read_root():
-    logger.info("收到首頁健康檢查請求")
     return {"status": "ok", "message": "LineNexus (Async) is running."}
 
 
@@ -79,13 +85,8 @@ async def callback(request: Request):
     body = await request.body()
     body_str = body.decode("utf-8")
 
-    try:
-        handler.handle(body_str, signature)
-    except InvalidSignatureError:
-        raise
-    except Exception as e:
-        logger.exception(f"處理 Webhook 時發生錯誤: {e}")
-        raise HTTPException(status_code=500, detail="Internal Error") from e
+    # 若 handle 噴錯，會自動由全域 exception_handler 捕捉
+    handler.handle(body_str, signature)
 
     return "OK"
 
@@ -98,16 +99,14 @@ def handle_message(event: MessageEvent):
     user_text = event.message.text.strip()
     logger.info(f"收到訊息: {user_text}")
 
-    # 從 app.state 取得全域物件
     line_bot_api: AsyncMessagingApi = app.state.line_bot_api
     dispatcher: CommandDispatcher = app.state.dispatcher
 
     async def process_and_reply():
         try:
-            # 委託給 Dispatcher 處理邏輯
+            # Dispatcher 內部已具備完整的業務異常攔截 (⚠️/❌)
             reply_text = await dispatcher.parse_and_execute(user_text)
 
-            # 發送回覆
             await line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
@@ -115,29 +114,18 @@ def handle_message(event: MessageEvent):
                 )
             )
         except Exception as e:
-            logger.error(f"處理訊息時發生錯誤: {e}")
-            try:
-                await line_bot_api.reply_message(
-                    ReplyMessageRequest(
-                        reply_token=event.reply_token,
-                        messages=[TextMessage(text="系統發生錯誤，請稍後再試。")],
-                    )
-                )
-            except Exception:
-                pass
+            # 這裡的錯誤通常是 LINE API 通訊失敗 (例如 reply_token 過期)
+            logger.error(f"發送回覆訊息失敗: {e}")
 
-    # 將任務丟入當前的事件迴圈中執行
     asyncio.create_task(process_and_reply())
 
 
 def start():
-    """啟動函式"""
-    logger.info(f"LineNexus 正在啟動於 {settings.APP_HOST}:{settings.APP_PORT} (Debug: {settings.DEBUG})...")
     uvicorn.run(
         "lineaihelper.main:app",
         host=settings.APP_HOST,
         port=settings.APP_PORT,
-        reload=settings.DEBUG
+        reload=settings.DEBUG,
     )
 
 

@@ -60,7 +60,7 @@
 - [x] **2.2. 建立 Service 體系**
   - 建立 `src/lineaihelper/services/` (Base, Stock, Chat, Help)。
   - **DoD**: 完成對應的 Unit Tests (`tests/services/`).
-- [ ] **2.3. 增強錯誤處理機制**
+- [x] **2.3. 增強錯誤處理機制**
   - 在 Service 層統一捕捉 Exception 並回傳友善錯誤訊息。
   - **DoD**: 增加測試案例模擬 API 失敗的情境。
 

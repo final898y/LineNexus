@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class BaseService(ABC):
     """
     所有業務邏輯服務的基礎抽象類別 (Abstract Base Class)。
