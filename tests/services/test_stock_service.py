@@ -1,27 +1,52 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from lineaihelper.exceptions import ExternalAPIError, ServiceError
+from lineaihelper.models.market_data import KLineBar, KLineData, PriceQuote
 from lineaihelper.services.stock_service import StockService
 
 
+@pytest.fixture
+def mock_provider():
+    provider = MagicMock()
+    provider.get_quote = AsyncMock()
+    provider.get_history = AsyncMock()
+    return provider
+
+
 @pytest.mark.asyncio
-async def test_stock_service_execute_success() -> None:
+async def test_stock_service_execute_success(mock_provider) -> None:
     mock_gemini = MagicMock()
     mock_response = MagicMock()
     mock_response.text = "Stock Analysis Result"
     mock_gemini.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
-    service = StockService(mock_gemini)
+    # 準備 Mock 數據
+    mock_provider.get_quote.return_value = PriceQuote(
+        symbol="2330.TW", current_price=100.0, currency="TWD", change_percent=1.5
+    )
+    mock_provider.get_history.return_value = KLineData(
+        symbol="2330.TW",
+        interval="1d",
+        bars=[
+            KLineBar(
+                timestamp=datetime.now(),
+                open=90,
+                high=110,
+                low=85,
+                close=100,
+                volume=1000,
+            )
+        ],
+    )
 
-    with patch("lineaihelper.services.stock_service.yf.Ticker") as mock_ticker:
-        mock_ticker.return_value.info = {
-            "regularMarketPrice": 100,
-            "longName": "Test Stock",
-        }
-        response = await service.execute("2330")
-        assert response == "Stock Analysis Result"
+    service = StockService(mock_gemini, provider=mock_provider)
+    response = await service.execute("2330")
+
+    assert response == "Stock Analysis Result"
+    mock_provider.get_quote.assert_called_once_with("2330")
 
 
 @pytest.mark.asyncio
@@ -31,29 +56,35 @@ async def test_stock_service_no_args() -> None:
 
     with pytest.raises(ServiceError) as excinfo:
         await service.execute("")
-    assert "請提供股票代碼" in str(excinfo.value)
+    assert "請提供股票" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
-async def test_stock_service_not_found() -> None:
+async def test_stock_service_data_fetch_error(mock_provider) -> None:
     mock_gemini = MagicMock()
-    service = StockService(mock_gemini)
+    mock_provider.get_quote.side_effect = ExternalAPIError("Provider Error")
 
-    with patch("lineaihelper.services.stock_service.yf.Ticker") as mock_ticker:
-        mock_ticker.return_value.info = {}
-        with pytest.raises(ServiceError) as excinfo:
-            await service.execute("INVALID")
-        assert "找不到股票代碼" in str(excinfo.value)
+    service = StockService(mock_gemini, provider=mock_provider)
+
+    with pytest.raises(ServiceError) as excinfo:
+        await service.execute("2330")
+    assert "資料檢索失敗" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
-async def test_stock_service_ai_error() -> None:
+async def test_stock_service_ai_error(mock_provider) -> None:
     mock_gemini = MagicMock()
     mock_gemini.aio.models.generate_content.side_effect = Exception("Gemini Down")
-    service = StockService(mock_gemini)
 
-    with patch("lineaihelper.services.stock_service.yf.Ticker") as mock_ticker:
-        mock_ticker.return_value.info = {"regularMarketPrice": 100}
-        with pytest.raises(ExternalAPIError) as excinfo:
-            await service.execute("2330")
-        assert "AI 分析目前無法使用" in str(excinfo.value)
+    mock_provider.get_quote.return_value = PriceQuote(
+        symbol="2330.TW", current_price=100.0
+    )
+    mock_provider.get_history.return_value = KLineData(
+        symbol="2330.TW", interval="1d", bars=[]
+    )
+
+    service = StockService(mock_gemini, provider=mock_provider)
+
+    with pytest.raises(ExternalAPIError) as excinfo:
+        await service.execute("2330")
+    assert "AI 分析目前無法使用" in str(excinfo.value)
