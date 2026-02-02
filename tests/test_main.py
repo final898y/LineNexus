@@ -6,7 +6,10 @@ from linebot.v3.exceptions import InvalidSignatureError
 def test_read_root(client: MagicMock) -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "message": "LineNexus (Async) is running."}
+    assert response.json() == {
+        "status": "ok",
+        "message": "LineNexus (Async) is running.",
+    }
 
 
 def test_callback_no_signature(client: MagicMock) -> None:

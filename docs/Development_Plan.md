@@ -41,6 +41,9 @@
     *   重點：使用 Repository Pattern 隔離資料庫操作，方便測試 Mock。
 *   **第四階段：部署與維運 (Deployment & Ops)**
     *   目標：容器化與 CI/CD 自動化。
+*   **第五階段：多元數據與技術分析強化 (Market Data Evolution)**
+    *   目標：引入 Data Provider 模式，支援多來源數據（台股、加密貨幣）與結構化技術分析。
+    *   重點：數據來源抽象化、定義 Domain Models、優化 AI 技術分析 Prompt。
 
 ---
 
@@ -85,6 +88,19 @@
   - 自動執行 `uv run ruff check` 與 `uv run pytest`。
 - [ ] **4.3. 生產環境配置**
   - 確保 API Key 等敏感資訊透過環境變數注入。
+
+### Phase 5: 多元數據與技術分析強化 (Market Data Evolution)
+- [ ] **5.1. 數據抽象化 (Data Provider Pattern)**
+  - 建立 `BaseDataProvider` 與 `YahooFinanceProvider`。
+  - 支援台股格式自動轉換 (例如 `2330` -> `2330.TW`)。
+- [ ] **5.2. 引入 Domain Models**
+  - 定義 `KLineData` 與 `PriceQuote` 等標準化 Data Classes。
+- [ ] **5.3. 支援加密貨幣**
+  - 實作 `CryptoProvider` (串接 Binance 或其他 API)。
+- [ ] **5.4. 強化 AI 技術分析邏輯**
+  - 實作獲取歷史 K 線功能。
+  - 設計技術分析專用 Prompt，將結構化數據餵給 AI。
+  - **DoD**: 確保 `/stock` 指令能根據數據長度進行深度分析。
 
 ---
 

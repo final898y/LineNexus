@@ -45,9 +45,37 @@
     *   ❌ 錯誤: `export VAR=1`
     *   ✅ 正確: `$env:VAR="1"`
 
-### ✅ 推薦的工具與指令
+## 4. 業界標準與工程卓越 (Engineering Excellence)
 
-*   **套件管理**: `uv` (例如 `uv run`, `uv add`, `uv sync`)。
-*   **Linter/Formatter**: `ruff` (嚴格遵守 `ruff.toml`)。
-*   **Log**: 使用 `loguru`，禁止使用 `print()`。
-*   **Test**: 使用 `pytest`，測試檔案位於 `tests/`。
+Agent 在進行系統設計與開發時，必須遵循以下業界標準：
+
+### 4.1. 架構與設計原則
+*   **Clean Architecture**: 嚴格分離領域邏輯 (Domain)、應用邏輯 (Service) 與外部介面 (API/Provider)。
+*   **SOLID 原則**: 特別注意單一職責 (SRP) 與開閉原則 (OCP)，確保功能擴展時不需大規模修改現有代碼。
+*   **DRY & KISS**: 保持代碼簡潔且不重複，避免過度工程化 (Over-engineering)。
+
+### 4.2. 資安規範 (Security Standards)
+*   **機敏資訊防護**: 嚴禁在代碼或 Log 中洩漏 API Key、Token 或使用者個資。所有金鑰必須透過 `$env:VAR` 或 `.env` 注入。
+*   **輸入驗證 (Input Validation)**: 對於所有外部輸入（來自 LINE 或 API）必須進行嚴格的型別檢查與合法性驗證，防止注入攻擊。
+*   **相依性安全**: 引入新套件前需確認其必要性與安全性，優先使用專案已建立的生態系 (如 `uv`, `fastapi`, `pydantic`)。
+
+## 5. 開發與驗證強制流程 (Mandatory Workflow)
+
+Agent 在完成任何功能開發或重構後，**必須自動執行**以下驗證流程，不得僅憑直覺判斷：
+
+1.  **實作 (Implement)**: 根據需求撰寫程式碼與**對應的測試案例**。
+2.  **單元測試 (Test)**: 執行 `uv run pytest` (或 `uv run test`)，確保新舊功能皆通過。
+3.  **品質檢查 (Lint)**: 執行 `uv run ruff check . --fix` (或 `uv run lint`)，修復風格問題。
+4.  **型別檢查 (Type Check)**: 執行 `uv run mypy .` (或 `uv run type-check`)，確保型別安全。
+5.  **提交驗證 (Commit)**: 按照 Git SOP 進行提交。
+
+---
+
+## 6. 指令快捷鍵與快捷腳本 (Scripts)
+
+為了提高效率，請優先使用 `pyproject.toml` 中定義的腳本：
+*   `uv run dev`: 啟動開發伺服器。
+*   `uv run test`: 執行所有測試。
+*   `uv run lint`: 執行代碼檢查。
+*   `uv run format`: 執行自動格式化。
+*   `uv run type-check`: 執行靜態型別檢查。

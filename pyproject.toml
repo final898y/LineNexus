@@ -18,9 +18,11 @@ dependencies = [
 ]
 
 [project.scripts]
-# 格式: 指令名稱 = "套件資料夾.檔案名:函式名"
-# 這行設定後，輸入 `uv run dev` 就會去執行 lineaihelper/main.py 裡面的 start() 函式
 dev = "lineaihelper.main:start"
+test = "lineaihelper.cli:test"
+lint = "lineaihelper.cli:lint"
+format = "lineaihelper.cli:format"
+type-check = "lineaihelper.cli:type_check"
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]

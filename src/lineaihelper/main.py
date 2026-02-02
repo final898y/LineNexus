@@ -52,137 +52,57 @@ handler = WebhookHandler(settings.LINE_CHANNEL_SECRET)
 
 
 @app.exception_handler(InvalidSignatureError)
-
-
 async def invalid_signature_handler(
-
-
     request: Request, exc: InvalidSignatureError
-
-
 ) -> JSONResponse:
-
-
     logger.error("無效的 LINE 簽章")
-
 
     return JSONResponse(status_code=400, content={"detail": "Invalid signature"})
 
 
-
-
-
-
-
-
 @app.exception_handler(Exception)
-
-
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-
-
     """全域異常攔截，作為最後一道防線"""
-
 
     logger.exception(f"全域攔截到未處理異常: {exc}")
 
-
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
-
-
-
-
-
-
 
 
 # --- 路由與控制器 (Routes & Controllers) ---
 
 
-
-
-
-
-
-
 @app.get("/")
-
-
 def read_root() -> dict:
-
-
     return {"status": "ok", "message": "LineNexus (Async) is running."}
 
 
-
-
-
-
-
-
 @app.post("/callback")
-
-
 async def callback(request: Request) -> str:
-
-
     """
-
-
     LINE Webhook 回呼入口
-
-
     """
-
 
     signature = request.headers.get("X-Line-Signature")
 
-
     if not signature:
-
-
         logger.warning("遺失 X-Line-Signature 標頭")
-
 
         raise HTTPException(status_code=400, detail="Missing signature")
 
-
-
-
-
     body = await request.body()
-
 
     body_str = body.decode("utf-8")
 
-
-
-
-
     # 若 handle 噴錯，會自動由全域 exception_handler 捕捉
 
-
     handler.handle(body_str, signature)
-
-
-
-
 
     return "OK"
 
 
-
-
-
-
-
-
 @handler.add(MessageEvent, message=TextMessageContent)
-
-
 def handle_message(event: MessageEvent) -> None:
-
-
     """
 
 
@@ -191,101 +111,42 @@ def handle_message(event: MessageEvent) -> None:
 
     """
 
-
     user_text = event.message.text.strip()
-
 
     logger.info(f"收到訊息: {user_text}")
 
-
-
-
-
     line_bot_api: AsyncMessagingApi = app.state.line_bot_api
-
 
     dispatcher: CommandDispatcher = app.state.dispatcher
 
-
-
-
-
     async def process_and_reply() -> None:
-
-
         try:
-
-
             # Dispatcher 內部已具備完整的業務異常攔截 (⚠️/❌)
-
 
             reply_text = await dispatcher.parse_and_execute(user_text)
 
-
-
-
-
             await line_bot_api.reply_message(
-
-
                 ReplyMessageRequest(
-
-
                     reply_token=event.reply_token,
-
-
                     messages=[TextMessage(text=reply_text)],
-
-
                 )
-
-
             )
 
-
         except Exception as e:
-
-
             # 這裡的錯誤通常是 LINE API 通訊失敗 (例如 reply_token 過期)
 
-
             logger.error(f"發送回覆訊息失敗: {e}")
-
-
-
-
 
     asyncio.create_task(process_and_reply())
 
 
-
-
-
-
-
-
 def start() -> None:
-
-
     uvicorn.run(
-
-
         "lineaihelper.main:app",
-
-
         host=settings.APP_HOST,
-
-
         port=settings.APP_PORT,
-
-
         reload=settings.DEBUG,
-
-
     )
-
-
-
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ from typing import Any, cast
 
 import yfinance as yf
 from google import genai
-from loguru import logger
 
 from lineaihelper.exceptions import ExternalAPIError, ServiceError
 from lineaihelper.services.base_service import BaseService
