@@ -9,5 +9,6 @@ async def test_help_service_execute() -> None:
     response = await service.execute("")
 
     assert "[LineNexus Commands]" in response
-    assert "/stock" in response
-    assert "/chat" in response
+    assert ".stock" in response
+    assert ".price" in response
+    assert ".chat" in response

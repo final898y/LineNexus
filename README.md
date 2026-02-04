@@ -10,17 +10,19 @@
 
 ```mermaid
 graph TD
-    A[使用者] -- 傳送指令 e.g., /stock 2330 --> B(LINE App)
+    A[使用者] -- 傳送指令 e.g., .stock 2330 --> B(LINE App)
     B -- Webhook --> C{後端伺服器 (FastAPI)}
     C -- 1. 簽章驗證 & 全域異常攔截 --> C
     C -- 2. 指令分發 --> D[CommandDispatcher]
     D -- 3. 業務異常攔截 ⚠️/❌ --> D
     D -- 4. 呼叫 Service --> E{功能模組 Services}
-    E -- /stock --> E1[StockService]
-    E -- /chat --> E2[ChatService]
-    E -- /help --> E3[HelpService]
+    E -- .stock --> E1[StockService]
+    E -- .price --> E4[PriceService]
+    E -- .chat --> E2[ChatService]
+    E -- .help --> E3[HelpService]
     E1 -- 抓取數據 --> F[Yahoo Finance]
     E1 -- AI 分析 --> G[Google Gemini]
+    E4 -- 抓取數據 --> F
     E2 -- AI 對話 --> G
     C -- 5. 回傳訊息 --> H[LINE Messaging API]
     H -- 推播訊息 --> B
@@ -88,7 +90,7 @@ graph TD
 
 ## 📁 專案結構 (Project Structure)
 
-```text
+```bash
 LineAiHelper/
 ├── docs/                   # 研發計畫與設計文件
 ├── src/lineaihelper/
@@ -101,6 +103,7 @@ LineAiHelper/
 │   │   ├── __init__.py     # 服務匯出控制
 │   │   ├── base_service.py # 抽象基礎類別
 │   │   ├── stock_service.py
+│   │   ├── price_service.py
 │   │   └── chat_service.py
 │   └── config.py           # Pydantic Settings
 ├── tests/                  # 測試架構
@@ -115,9 +118,10 @@ LineAiHelper/
 
 | 指令 | 說明 | 範例 |
 | :--- | :--- | :--- |
-| `/stock [代碼]` | 結合日/週/月多週期數據的 AI 技術分析 | `/stock 2330` |
-| `/chat [訊息]` | AI 一般性對話 | `/chat 今天天氣如何？` |
-| `/help` | 顯示指令列表 | `/help` |
+| `.stock [代碼]` | 結合日/週/月多週期數據的 AI 技術分析 | `.stock 2330` |
+| `.price [代碼]` | 快速查詢即時報價與近期 K 線 (純數據) | `.price 2330` |
+| `.chat [訊息]` | AI 一般性對話 | `.chat 今天天氣如何？` |
+| `.help` | 顯示指令列表 | `.help` |
 
 ## 授權
 

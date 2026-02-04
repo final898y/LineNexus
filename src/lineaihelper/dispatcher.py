@@ -4,23 +4,30 @@ from google import genai
 from loguru import logger
 
 from lineaihelper.exceptions import LineNexusError
-from lineaihelper.services import BaseService, ChatService, HelpService, StockService
+from lineaihelper.services import (
+    BaseService,
+    ChatService,
+    HelpService,
+    PriceService,
+    StockService,
+)
 
 
 class CommandDispatcher:
     def __init__(self, gemini_client: genai.Client):
         # 註冊指令對應的服務
         self.services: Dict[str, BaseService] = {
-            "/stock": StockService(gemini_client),
-            "/chat": ChatService(gemini_client),
-            "/help": HelpService(),
+            ".stock": StockService(gemini_client),
+            ".price": PriceService(),
+            ".chat": ChatService(gemini_client),
+            ".help": HelpService(),
         }
 
     async def parse_and_execute(self, user_text: str) -> str:
         """
         解析使用者文字並分發給對應服務，並處理所有業務與系統異常。
         """
-        if not user_text.startswith("/"):
+        if not user_text.startswith("."):
             return f"LineNexus (Async) received: {user_text}"
 
         parts = user_text.split(" ", 1)

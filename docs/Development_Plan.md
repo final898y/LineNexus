@@ -20,10 +20,11 @@
 ## 2. MVP 資料流程 (MVP Data Flow)
 
 1.  **接收 (Webhook)**: `main.py` 接收 LINE 傳來的文字訊息。
-2.  **解析 (Dispatcher)**: 透過簡單的文字處理 (如 `startswith("/")`) 判斷指令類型。
+2.  **解析 (Dispatcher)**: 透過簡單的文字處理 (如 `startswith(".")`) 判斷指令類型。
 3.  **分發 (Services)**: 透過 `CommandDispatcher` 將請求分派給具體的 `Service` 類別。
 4.  **執行 (Domain Logic)**:
     *   `StockService`: 抓取 `yfinance` 數據 -> 丟給 Gemini -> 取得建議。
+    *   `PriceService`: 抓取 `yfinance` 數據 -> 格式化回傳。
     *   `ChatService`: 直接丟給 Gemini 進行對話。
 5.  **回傳 (Line API)**: 將結果透過 `line-bot-sdk` 推播回使用者。
 
@@ -105,8 +106,9 @@
 ---
 
 ## 5. 指令擴展清單 (Planned Commands)
-- `/stock [symbol]` - (MVP) 股市分析
-- `/chat [message]` - (MVP) AI 聊天
-- `/help` - (MVP) 功能說明
+- `.stock [symbol]` - (MVP) 股市分析
+- `.price [symbol]` - (New) 純數據查詢
+- `.chat [message]` - (MVP) AI 聊天
+- `.help` - (MVP) 功能說明
 - `/weather [city]` - (Future) 天氣預報
 - `/news` - (Future) 財經頭條
