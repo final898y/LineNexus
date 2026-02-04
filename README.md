@@ -10,23 +10,60 @@
 
 ```mermaid
 graph TD
-    A[使用者] -- 傳送指令 e.g., .stock 2330 --> B(LINE App)
-    B -- Webhook --> C{後端伺服器 (FastAPI)}
-    C -- 1. 簽章驗證 & 全域異常攔截 --> C
-    C -- 2. 指令分發 --> D[CommandDispatcher]
-    D -- 3. 業務異常攔截 ⚠️/❌ --> D
-    D -- 4. 呼叫 Service --> E{功能模組 Services}
-    E -- .stock --> E1[StockService]
-    E -- .price --> E4[PriceService]
-    E -- .chat --> E2[ChatService]
-    E -- .help --> E3[HelpService]
-    E1 -- 抓取數據 --> F[Yahoo Finance]
-    E1 -- AI 分析 --> G[Google Gemini]
-    E4 -- 抓取數據 --> F
-    E2 -- AI 對話 --> G
-    C -- 5. 回傳訊息 --> H[LINE Messaging API]
-    H -- 推播訊息 --> B
-    B -- 顯示結果 --> A
+    %% 外部系統
+    User([使用者]) -- ".stock 2330" --> LineApp[LINE App]
+    
+    %% 框架與入口層
+    subgraph Framework ["系統入口層 (FastAPI)"]
+        Webhook[Webhook 接收器]
+        GlobalGuard[全域安全與安全攔截]
+    end
+
+    %% 指令分發與異常處理中心
+    subgraph Core ["核心分發與異常處理"]
+    direction TB
+        Dispatcher[指令分發器 Dispatcher]
+        ErrorBridge{業務異常處理中心}
+    end
+
+    %% 業務執行層
+    subgraph Services ["業務執行層 (Services)"]
+    direction TB
+        StockSvc[StockService]
+        PriceSvc[PriceService]
+        ChatSvc[ChatService]
+        HelpSvc[HelpService]
+    end
+
+    %% 外部供應商
+    subgraph Providers ["基礎設施與數據源"]
+        Yahoo["Yahoo Finance API"]
+        Gemini["Google Gemini API"]
+    end
+
+    %% 流程連線
+    LineApp -- "Webhook POST" --> Webhook
+    Webhook --> GlobalGuard
+    GlobalGuard --> Dispatcher
+    
+    Dispatcher -- "分發指令" --> Services
+    
+    StockSvc --> Yahoo & Gemini
+    PriceSvc --> Yahoo
+    ChatSvc --> Gemini
+    
+    %% 異常與結果回傳路徑
+    Services -- "1. 執行結果成功回傳" --> ErrorBridge
+    Services -. "2. 拋出業務異常" .-> ErrorBridge
+    
+    ErrorBridge -- "封裝最終回應內容" --> Dispatcher
+    Dispatcher --> Webhook
+    Webhook -- "Messaging API" --> LineApp
+    LineApp --> User
+
+    %% 樣式設定
+    style Dispatcher fill:#f9f,stroke:#333,stroke-width:2px
+    style ErrorBridge fill:#fff4dd,stroke:#d4a017,stroke-width:2px
 ```
 
 ### 架構特色
