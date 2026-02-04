@@ -90,14 +90,14 @@
   - 確保 API Key 等敏感資訊透過環境變數注入。
 
 ### Phase 5: 多元數據與技術分析強化 (Market Data Evolution)
-- [ ] **5.1. 數據抽象化 (Data Provider Pattern)**
+- [x] **5.1. 數據抽象化 (Data Provider Pattern)**
   - 建立 `BaseDataProvider` 與 `YahooFinanceProvider`。
   - 支援台股格式自動轉換 (例如 `2330` -> `2330.TW`)。
-- [ ] **5.2. 引入 Domain Models**
+- [x] **5.2. 引入 Domain Models**
   - 定義 `KLineData` 與 `PriceQuote` 等標準化 Data Classes。
 - [ ] **5.3. 支援加密貨幣**
   - 實作 `CryptoProvider` (串接 Binance 或其他 API)。
-- [ ] **5.4. 強化 AI 技術分析邏輯**
+- [x] **5.4. 強化 AI 技術分析邏輯**
   - 實作獲取歷史 K 線功能。
   - 設計技術分析專用 Prompt，將結構化數據餵給 AI。
   - **DoD**: 確保 `/stock` 指令能根據數據長度進行深度分析。

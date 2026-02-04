@@ -9,7 +9,7 @@ from lineaihelper.services.stock_service import StockService
 
 
 @pytest.fixture
-def mock_provider():
+def mock_provider() -> MagicMock:
     provider = MagicMock()
     provider.get_quote = AsyncMock()
     provider.get_history = AsyncMock()
@@ -17,7 +17,7 @@ def mock_provider():
 
 
 @pytest.mark.asyncio
-async def test_stock_service_execute_success(mock_provider) -> None:
+async def test_stock_service_execute_success(mock_provider: MagicMock) -> None:
     mock_gemini = MagicMock()
     mock_response = MagicMock()
     mock_response.text = "Stock Analysis Result"
@@ -27,6 +27,7 @@ async def test_stock_service_execute_success(mock_provider) -> None:
     mock_provider.get_quote.return_value = PriceQuote(
         symbol="2330.TW", current_price=100.0, currency="TWD", change_percent=1.5
     )
+    # 設定 get_history 回傳相同的 KLineData
     mock_provider.get_history.return_value = KLineData(
         symbol="2330.TW",
         interval="1d",
@@ -47,6 +48,8 @@ async def test_stock_service_execute_success(mock_provider) -> None:
 
     assert response == "Stock Analysis Result"
     mock_provider.get_quote.assert_called_once_with("2330")
+    # 確認 get_history 被呼叫了 3 次 (日, 週, 月)
+    assert mock_provider.get_history.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -60,7 +63,7 @@ async def test_stock_service_no_args() -> None:
 
 
 @pytest.mark.asyncio
-async def test_stock_service_data_fetch_error(mock_provider) -> None:
+async def test_stock_service_data_fetch_error(mock_provider: MagicMock) -> None:
     mock_gemini = MagicMock()
     mock_provider.get_quote.side_effect = ExternalAPIError("Provider Error")
 
@@ -72,7 +75,7 @@ async def test_stock_service_data_fetch_error(mock_provider) -> None:
 
 
 @pytest.mark.asyncio
-async def test_stock_service_ai_error(mock_provider) -> None:
+async def test_stock_service_ai_error(mock_provider: MagicMock) -> None:
     mock_gemini = MagicMock()
     mock_gemini.aio.models.generate_content.side_effect = Exception("Gemini Down")
 

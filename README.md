@@ -95,7 +95,9 @@ LineAiHelper/
 │   ├── main.py             # 進入點、Lifespan 與全域異常攔截
 │   ├── dispatcher.py       # 指令分發與業務異常轉換
 │   ├── exceptions.py       # 自定義業務異常類別
-│   ├── services/           # 功能模組
+│   ├── models/             # 領域模型 (Domain Models)
+│   ├── providers/          # 外部資料提供者 (Data Providers)
+│   ├── services/           # 功能模組 (Services)
 │   │   ├── __init__.py     # 服務匯出控制
 │   │   ├── base_service.py # 抽象基礎類別
 │   │   ├── stock_service.py
@@ -113,7 +115,7 @@ LineAiHelper/
 
 | 指令 | 說明 | 範例 |
 | :--- | :--- | :--- |
-| `/stock [代碼]` | 股市分析與 AI 投資見解 | `/stock 2330` |
+| `/stock [代碼]` | 結合日/週/月多週期數據的 AI 技術分析 | `/stock 2330` |
 | `/chat [訊息]` | AI 一般性對話 | `/chat 今天天氣如何？` |
 | `/help` | 顯示指令列表 | `/help` |
 

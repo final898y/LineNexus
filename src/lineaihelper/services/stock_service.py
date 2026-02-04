@@ -1,13 +1,20 @@
+import asyncio
+import textwrap
+from typing import List, Optional
+
 from google import genai
 
 from lineaihelper.exceptions import ExternalAPIError, ServiceError
+from lineaihelper.models.market_data import KLineBar
 from lineaihelper.providers.base_provider import BaseDataProvider
 from lineaihelper.providers.stock_provider import YahooFinanceProvider
 from lineaihelper.services.base_service import BaseService
 
 
 class StockService(BaseService):
-    def __init__(self, gemini_client: genai.Client, provider: BaseDataProvider = None):
+    def __init__(
+        self, gemini_client: genai.Client, provider: Optional[BaseDataProvider] = None
+    ):
         self.gemini_client = gemini_client
         # 預設使用 YahooFinanceProvider，未來可從外部注入不同的 Provider
         self.provider = provider or YahooFinanceProvider()
@@ -18,39 +25,73 @@ class StockService(BaseService):
 
         symbol = args.strip()
 
-        # 1. 抓取即時報價與歷史 K 線 (為了技術分析)
+        # 1. 抓取多週期歷史 K 線與即時報價
         try:
-            quote = await self.provider.get_quote(symbol)
-            # 預設抓取過去一個月的日線數據
-            history = await self.provider.get_history(
-                symbol, period="1mo", interval="1d"
+            quote_task = self.provider.get_quote(symbol)
+            # 日線：3 個月，用於觀察短期均線與型態
+            daily_task = self.provider.get_history(symbol, period="3mo", interval="1d")
+            # 週線：1 年，用於觀察中長期趨勢
+            weekly_task = self.provider.get_history(symbol, period="1y", interval="1wk")
+            # 月線：2 年，用於觀察長期基期
+            monthly_task = self.provider.get_history(
+                symbol, period="2y", interval="1mo"
+            )
+
+            quote, daily_h, weekly_h, monthly_h = await asyncio.gather(
+                quote_task, daily_task, weekly_task, monthly_task
             )
         except ExternalAPIError as e:
             raise ServiceError(f"資料檢索失敗: {str(e)}") from e
 
-        # 2. 準備技術分析摘要
-        bars_summary = "\n".join(
-            [
-                f"- {b.timestamp.strftime('%Y-%m-%d')}: "
-                f"O:{b.open}, H:{b.high}, L:{b.low}, C:{b.close}, V:{b.volume}"
-                for b in history.bars[-5:]  # 只取最近 5 天顯示在 Prompt 中作為範例
-            ]
-        )
+        # 2. 準備多週期數據摘要
+        def format_bars(bars: List[KLineBar], count: int) -> str:
+            return "\n".join(
+                [
+                    f"- {b.timestamp.strftime('%Y-%m-%d')}: "
+                    f"O:{b.open}, H:{b.high}, L:{b.low}, C:{b.close}, V:{b.volume}"
+                    for b in bars[-count:]
+                ]
+            )
 
-        prompt = (
-            f"你是一位專業的投資分析師。請針對以下數據提供繁體中文分析報告：\n\n"
-            f"【基本資料】\n"
-            f"代碼：{quote.symbol}\n"
-            f"目前價格：{quote.current_price} {quote.currency}\n"
-            f"漲跌幅：{quote.change_percent or 0:.2f}%\n\n"
-            f"【近期 K 線數據 (最近 5 天)】\n"
-            f"{bars_summary}\n\n"
-            f"【分析要求】\n"
-            f"1. 根據最近一個月的價格走勢進行技術分析總結。\n"
-            f"2. 說明目前的支撐與壓力位（若可判斷）。\n"
-            f"3. 給予短期的操作建議與風險提示。\n"
-            f"請以專業、客觀且簡潔的口吻回覆。"
-        )
+        daily_summary = format_bars(daily_h.bars, 22)  # 約一個月的交易日
+        weekly_summary = format_bars(weekly_h.bars, 12)  # 約三個月的週線
+        monthly_summary = format_bars(monthly_h.bars, 12)  # 一年的月線
+
+        prompt = textwrap.dedent(f"""
+            你是一位具有10年以上經驗的台股技術分析師，
+            擅長以清楚、理性的方式向一般投資人說明盤勢，
+            請依據以下資料提供專業分析。
+
+            【基本資料】
+            代碼：{quote.symbol}
+            目前價格：{quote.current_price} {quote.currency}
+            漲跌幅：{quote.change_percent or 0:.2f}%
+
+            【日 K 線（近一個月）】
+            {daily_summary}
+
+            【週 K 線（近 12 週）】
+            {weekly_summary}
+
+            【月 K 線（近 12 個月）】
+            {monthly_summary}
+
+            【分析要求】
+            請依下列結構回覆：
+
+            一、趨勢總覽（短中長期方向）
+            二、技術指標分析（價格與均線、量價關係）
+            三、支撐與壓力位置
+            四、短期操作建議
+            五、主要風險提醒
+
+            分析原則：
+            1. 內容須依據提供資料推論，不可憑空假設。
+            2. 若資料不足，請明確說明「資料不足，無法判斷」。
+            3. 避免誇大或過度樂觀語氣。
+            4. 使用繁體中文撰寫。
+            5. 文字清楚、有條理、適合一般投資人閱讀。
+        """).strip()
 
         # 3. AI 分析
         try:
