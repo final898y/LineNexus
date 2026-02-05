@@ -37,7 +37,10 @@
 *   **第二階段：模組化 (The Modularization)** - *Completed*
     *   目標：建立 Service 層與 Dispatcher，分離職責。
     *   重點：確保每個 Service 都有獨立的單元測試與嚴格型別。
-*   **第三階段：持久化 (The Persistence)** - *Current*
+*   **第 2.5 階段：AI 工程化基礎建設 (AI Engineering Infrastructure)** - *Current*
+    *   目標：將 Prompt 與程式碼解耦，建立版本化管理機制。
+    *   重點：建立 Prompt Loader、外部 Markdown 管理與變數注入機制。
+*   **第三階段：持久化 (The Persistence)**
     *   目標：引入資料庫 (PostgreSQL)，記錄對話與使用者狀態。
     *   重點：使用 Repository Pattern 隔離資料庫操作，方便測試 Mock。
 *   **第四階段：部署與維運 (Deployment & Ops)**
@@ -71,6 +74,16 @@
   - 導入 `mypy` 並啟用 `pydantic.mypy` 插件。
   - **DoD**: 全專案標註型別並通過 `uv run mypy .` 檢查。
 
+### Phase 2.5: AI 工程化基礎建設 (Prompt as Code)
+- [x] **2.5.1. 建立 Prompt Loader 機制**
+  - 實作支援 Jinja2 或 Template 渲染的 `PromptEngine`。
+- [x] **2.5.2. 外部化 Prompt 管理**
+  - 將 `StockService` 與 `ChatService` 的 Prompt 移至 `src/lineaihelper/prompts/`。
+- [x] **2.5.3. 實作 Prompt 版本化**
+  - 建立 `latest.md` 與版本化檔案結構，並在 Log 中記錄版本。
+- [x] **2.5.4. 單元測試與驗證**
+  - 確保變數注入正確，並建立 Prompt 完整性測試。
+
 ### Phase 3: 資料持久化與日誌 (Persistence & Logging)
 - [ ] **3.1. 結構化日誌導入**
   - 使用 `loguru` 取代 print，並設定 log rotation。
@@ -101,7 +114,7 @@
 - [x] **5.4. 強化 AI 技術分析邏輯**
   - 實作獲取歷史 K 線功能。
   - 設計技術分析專用 Prompt，將結構化數據餵給 AI。
-  - **DoD**: 確保 `/stock` 指令能根據數據長度進行深度分析。
+  - **DoD**: 確保 `.stock` 指令能根據數據長度進行深度分析。
 
 ---
 

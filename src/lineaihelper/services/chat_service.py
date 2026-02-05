@@ -1,20 +1,30 @@
+from typing import Optional
+
 from google import genai
 
 from lineaihelper.exceptions import ExternalAPIError, ServiceError
+from lineaihelper.prompt_engine import PromptEngine
 from lineaihelper.services.base_service import BaseService
 
 
 class ChatService(BaseService):
-    def __init__(self, gemini_client: genai.Client):
+    def __init__(
+        self,
+        gemini_client: genai.Client,
+        prompt_engine: Optional[PromptEngine] = None,
+    ):
         self.gemini_client = gemini_client
+        self.prompt_engine = prompt_engine or PromptEngine()
 
     async def execute(self, args: str) -> str:
         if not args:
             raise ServiceError("請提供聊天內容，例如: /chat 你好")
 
+        prompt = self.prompt_engine.render("chat", {"message": args})
+
         try:
             response = await self.gemini_client.aio.models.generate_content(
-                model="gemini-2.5-flash", contents=args
+                model="gemini-2.5-flash", contents=prompt
             )
 
             if not response or not response.text:

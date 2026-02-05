@@ -6,7 +6,7 @@
 
 ## 🚀 專案核心架構
 
-本專案引入 **Dispatcher (分發器)** 與 **Service (服務層)** 模式，確保功能模組化且易於測試與擴展。
+本專案引入 **Dispatcher (分發器)** 與 **Service (服務層)** 模式，並透過 **PromptEngine** 實現 AI 提示詞的工程化管理，確保功能模組化且易於測試與擴展。
 
 ```mermaid
 graph TD
@@ -35,6 +35,12 @@ graph TD
         HelpSvc[HelpService]
     end
 
+    %% AI 工程化層
+    subgraph AIEngine ["AI 工程化層 (Prompt Ops)"]
+        PromptEngine[PromptEngine]
+        MarkdownPrompts[(Markdown Prompts)]
+    end
+
     %% 外部供應商
     subgraph Providers ["基礎設施與數據源"]
         Yahoo["Yahoo Finance API"]
@@ -48,9 +54,11 @@ graph TD
     
     Dispatcher -- "分發指令" --> Services
     
-    StockSvc --> Yahoo & Gemini
-    PriceSvc --> Yahoo
-    ChatSvc --> Gemini
+    Services --> PromptEngine
+    PromptEngine --> MarkdownPrompts
+    
+    StockSvc --> Yahoo
+    Services --> Gemini
     
     %% 異常與結果回傳路徑
     Services -- "1. 執行結果成功回傳" --> ErrorBridge
@@ -64,15 +72,20 @@ graph TD
     %% 樣式設定
     style Dispatcher fill:#f9f,stroke:#333,stroke-width:2px
     style ErrorBridge fill:#fff4dd,stroke:#d4a017,stroke-width:2px
+    style AIEngine fill:#e1f5fe,stroke:#01579b,stroke-width:2px
 ```
 
 ### 架構特色
 
 *   **指令分發器 (Dispatcher)**: 負責解析指令標籤，並統一處理業務異常 (Business Logic Exceptions)。
+*   **Prompt 工程化管理 (Prompt as Code)**:
+    *   將 AI 提示詞與程式碼解耦，儲存於外部 `.md` 檔案。
+    *   支援 **Jinja2** 模板渲染，動態注入業務數據。
+    *   透過 **YAML Frontmatter** 實作提示詞版本管理與元數據追蹤。
 *   **服務層 (Services)**: 每個功能模組獨立運作，強制實作 `BaseService` 介面。
 *   **雙層異常處理**:
     *   **系統層 (FastAPI)**: 攔截 500/400 錯誤，確保 HTTP 狀態碼正確。
-    *   **業務層 (Dispatcher)**: 攔截邏輯錯誤（如配額不足、找不到代碼），回傳友善的 `⚠️` 或 `❌` 提示。
+    *   **業務層 (Dispatcher)**: 攔截邏輯錯誤，回傳友善的 `⚠️` 或 `❌` 提示。
 
 ---
 
@@ -80,10 +93,12 @@ graph TD
 
 *   **Runtime**: Python 3.12+
 *   **Web Framework**: FastAPI
+*   **AI Service**: Google Gemini API
+*   **Prompt Engine**: Jinja2 + PyYAML (Frontmatter 解析)
 *   **Package Manager**: `uv` (高效能替代 pip/poetry)
 *   **Static Analysis**: `ruff` (Linter/Formatter), `mypy` (Static Type Checker)
 *   **Logging**: `loguru`
-*   **Testing**: `pytest` (搭配 `pytest-asyncio` & `anyio`)
+*   **Testing**: `pytest`
 
 ---
 
@@ -129,35 +144,30 @@ graph TD
 
 ```bash
 LineAiHelper/
-├── docs/                   # 研發計畫與設計文件
 ├── src/lineaihelper/
-│   ├── main.py             # 進入點、Lifespan 與全域異常攔截
-│   ├── dispatcher.py       # 指令分發與業務異常轉換
-│   ├── exceptions.py       # 自定義業務異常類別
-│   ├── models/             # 領域模型 (Domain Models)
-│   ├── providers/          # 外部資料提供者 (Data Providers)
-│   ├── services/           # 功能模組 (Services)
-│   │   ├── __init__.py     # 服務匯出控制
-│   │   ├── base_service.py # 抽象基礎類別
-│   │   ├── stock_service.py
-│   │   ├── price_service.py
-│   │   └── chat_service.py
-│   └── config.py           # Pydantic Settings
+│   ├── main.py             # 進入點
+│   ├── dispatcher.py       # 指令分發器
+│   ├── prompt_engine.py    # Prompt 渲染引擎
+│   ├── prompts/            # [NEW] 提示詞倉庫 (Markdown)
+│   │   ├── stock/latest.md
+│   │   └── chat/latest.md
+│   ├── models/             # 領域模型
+│   ├── providers/          # 外部資料提供者
+│   ├── services/           # 業務服務層
+│   └── config.py           # 配置管理
 ├── tests/                  # 測試架構
-│   ├── services/           # 針對各模組的單元測試
-│   └── test_dispatcher.py  # 路由與分發測試
-├── mypy.ini                # Mypy 設定 (含 Pydantic 插件)
-├── ruff.toml               # Ruff 風格設定
-└── pyproject.toml          # 專案依賴管理
+├── mypy.ini                # Mypy 設定
+├── ruff.toml               # Ruff 設定
+└── pyproject.toml          # 依賴管理
 ```
 
 ## ⌨️ 指令互動
 
 | 指令 | 說明 | 範例 |
 | :--- | :--- | :--- |
-| `.stock [代碼]` | 結合日/週/月多週期數據的 AI 技術分析 | `.stock 2330` |
-| `.price [代碼]` | 快速查詢即時報價與近期 K 線 (純數據) | `.price 2330` |
-| `.chat [訊息]` | AI 一般性對話 | `.chat 今天天氣如何？` |
+| `.stock [代碼]` | 結合多週期數據的 AI 技術分析 | `.stock 2330` |
+| `.price [代碼]` | 快速查詢即時報價 (純數據) | `.price 2330` |
+| `.chat [訊息]` | AI 一般性對話 (具備 System Prompt) | `.chat 你是誰？` |
 | `.help` | 顯示指令列表 | `.help` |
 
 ## 授權
