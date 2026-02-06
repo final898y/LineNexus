@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     DEBUG: bool = False
+    ENVIRONMENT: str = "development"  # development, staging, production
+    LOG_JSON: bool = False
 
     # LINE Bot 設定
     LINE_CHANNEL_ACCESS_TOKEN: str

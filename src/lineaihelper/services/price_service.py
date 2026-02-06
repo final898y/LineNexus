@@ -39,8 +39,7 @@ class PriceService(BaseService):
 
         for b in history.bars[-5:]:
             lines.append(
-                f"- {b.timestamp.strftime('%m/%d')}: "
-                f"C:{b.close:<7} V:{b.volume:,}"
+                f"- {b.timestamp.strftime('%m/%d')}: C:{b.close:<7} V:{b.volume:,}"
             )
 
         return "\n".join(lines)

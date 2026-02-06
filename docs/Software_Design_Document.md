@@ -1,7 +1,7 @@
 # 軟體設計文件 (Software Design Document) - LineNexus
 
-**版本**: 1.1.0
-**日期**: 2025-01-25
+**版本**: 2.0.0
+**日期**: 2026-02-05
 **專案名稱**: LineNexus | AI 指令樞紐
 
 ---
@@ -9,137 +9,168 @@
 ## 1. 簡介
 
 ### 1.1. 文件目的
-本文件詳述「LineNexus」系統的架構設計、技術選型與開發指南。其目標是建立一個具備高度擴展性的 LINE 指令機器人平台，作為未來新增 AI 功能（如股市、天氣、翻譯等）的技術藍圖。
+本文件詳述「LineNexus」系統的架構設計、技術選型與開發指南。本專案嚴格遵循 **Clean Architecture** 與 **SOLID 原則**，並引入 **AI 工程化 (AI Engineering)** 實踐，旨在建立一個可維護、可測試且具備高度擴展性的 AI 代理平台。
 
 ### 1.2. 專案概述
-LineNexus 是一個基於 LINE 的 **指令式 AI 代理 (Command-based AI Agent)**。核心採用「分發器 (Dispatcher)」模式，能解析使用者輸入的特定指令（如 `/stock`, `/chat`），並將請求派發至獨立的功能模組（Services）。本系統整合了 Google Gemini LLM 以提供核心的理解與生成能力。
+LineNexus 是一個基於 LINE 的 **指令式 AI 代理 (Command-based AI Agent)**。系統採用「分發器 (Dispatcher)」模式處理使用者意圖，核心邏輯與外部框架（LINE, FastAPI, Database）徹底解耦。AI 能力透過 **Prompt as Code** 的方式進行管理，確保提示詞的可追溯性與迭代效率。
 
 ### 1.3. 專案範疇
 
 #### 1.3.1. 範圍內 (In-Scope)
-*   **指令分發系統**: 建立核心 Dispatcher，支援 `/` 指令解析。
-*   **股市分析服務**: 整合 `yfinance` 與 Gemini，提供專業的台股投資見解。
-*   **AI 聊天服務**: 提供基於 Gemini 的一般性對話功能。
-*   **模組化架構**: 透過 Service 模式讓新功能能以「外掛」方式加入。
-*   **非同步架構**: 使用 FastAPI 與非同步 IO 處理高併發 Webhook 請求。
+*   **指令分發核心**: 支援 `.command` 語法的動態分發與參數解析。
+*   **多模態業務服務**:
+    *   **股市分析**: 整合 `BaseDataProvider` 介面，提供彈性的數據來源（台股、美股、加密貨幣）。
+    *   **AI 聊天**: 基於版本化 Prompt 的通用對話服務。
+    *   **純數據查詢**: 不經 AI 處理的即時報價服務。
+*   **AI 工程化基礎建設**: 實作 `PromptEngine`，支援 Jinja2 模板渲染、Markdown 外部儲存與版本控制。
+*   **依賴反轉架構**: 透過 Dependency Injection (DI) 管理外部依賴。
 
 #### 1.3.2. 範圍外 (Out-of-Scope)
-*   **複雜圖表繪製**: 初期僅回傳文字分析，不提供動態圖片生成。
-*   **即時串流報價**: 股市數據採用 Yahoo Finance 延遲數據。
-*   **支付系統整合**: 本系統不涉及任何交易或收費行為。
+*   **交易執行**: 系統僅提供資訊與建議，不涉及實際下單。
+*   **使用者帳戶管理系統 (IAM)**: 依賴 LINE User ID 識別，暫不實作獨立登入系統。
 
 ---
 
-## 2. 系統架構
+## 2. 系統架構 (Clean Architecture)
 
-### 2.1. 高階架構圖
-系統採用「中心化分發，去中心化執行」的架構模式。
+本專案採用 **Clean Architecture (洋蔥架構)**，由內而外分為四層，依賴關係**只能由外向內**。
 
 ```mermaid
 graph TD
-    A[使用者] -- "傳送指令 e.g., /stock 2330" --> B(LINE App)
-    B -- "Webhook" --> C{FastAPI 入口}
-    subgraph "核心樞紐 (Nexus Core)"
-        C -- "1. 驗證來源" --> D[Dispatcher 分發器]
-        D -- "2. 解析指令" --> D
-        D -- "3. 調度服務" --> E{Service Manager}
+    subgraph Infrastructure [Infrastructure Layer]
+        FastAPI[FastAPI / Webhook]
+        LineAPI[LINE Messaging API]
+        DB[(PostgreSQL)]
+        Gemini[Gemini API]
+        PromptFiles[Markdown Prompts]
     end
-    subgraph "功能服務層 (Services)"
-        E -- "/stock" --> E1[Stock Service]
-        E -- "/chat" --> E2[Chat Service]
-        E -- "/help" --> E3[Help Service]
+
+    subgraph Adapters [Interface Adapters Layer]
+        Dispatcher[Command Dispatcher]
+        Presenters[Response Presenters]
+        Gateways[Data Providers / Repositories]
+        PromptEng[Prompt Engine]
     end
-    E1 -- "查詢" --> F1[yfinance API]
-    E1 -- "分析" --> G[Google Gemini API]
-    E2 -- "對話" --> G
-    E -- "回傳訊息物件" --> C
-    C -- "4. 推播" --> H[LINE Messaging API]
-    H -- "顯示結果" --> B
+
+    subgraph UseCases [Application Business Rules]
+        StockSvc[Stock Service]
+        ChatSvc[Chat Service]
+        PriceSvc[Price Service]
+        BaseSvc[Base Service Interface]
+    end
+
+    subgraph Entities [Enterprise Business Rules]
+        Models[Domain Models (KLine, Quote)]
+        Exceptions[Business Exceptions]
+    end
+
+    %% Dependency Rule: Outer layers depend on inner layers
+    Infrastructure --> Adapters
+    Adapters --> UseCases
+    UseCases --> Entities
+
+    %% Specific Flows
+    FastAPI -- "Request" --> Dispatcher
+    Dispatcher -- "DTO" --> BaseSvc
+    StockSvc -- "Interface" --> Gateways
+    Gateways -- "Impl" --> Gemini & DB
+    StockSvc -- "Interface" --> PromptEng
+    PromptEng -- "Read" --> PromptFiles
 ```
 
-### 2.2. 核心組件說明
-1.  **FastAPI Entry (main.py)**: 負責 HTTP 通訊、簽章驗證與初步的事件分流。
-2.  **Dispatcher (dispatcher.py)**: 系統的大腦。負責字符串解析，識別指令標籤與參數，並決定由哪個 Service 處理。
-3.  **Service Layer (services/)**:
-    *   **BaseService**: 定義所有服務必須實作的介面（抽象類別）。
-    *   **StockService**: 封裝股市數據獲取與 AI 提示詞工程。
-    *   **ChatService**: 封裝與 Gemini 的直接對話邏輯。
-4.  **External Adaptors**: 封裝對外部 API (Line, Gemini, Yahoo) 的低階呼叫。
+### 2.1. 層級職責說明
+
+1.  **Entities (Domain Models)**:
+    *   定義核心業務物件（如 `StockQuote`, `KLineBar`）。
+    *   純 Python Data Classes，**不依賴任何外部庫**。
+2.  **Use Cases (Services)**:
+    *   封裝具體的應用邏輯（如「分析台股趨勢」）。
+    *   定義 `Input Port` (execute 方法參數) 與 `Output Port` (回傳結果)。
+    *   透過介面 (Interface) 呼叫外部資源，**不直接依賴實作**。
+3.  **Interface Adapters**:
+    *   **Dispatcher**: 將 LINE Webhook 事件轉換為 Service 能理解的輸入。
+    *   **PromptEngine**: 將 Service 的意圖轉換為 LLM 能理解的 Prompt 字串。
+    *   **Providers**: 實作 Use Case 定義的介面（如 `YahooFinanceProvider` 實作 `BaseDataProvider`）。
+4.  **Infrastructure**:
+    *   框架與驅動程式（FastAPI, `line-bot-sdk`, `google-genai`）。
+    *   資料庫與檔案系統。
 
 ---
 
-## 3. 詳細設計
+## 3. SOLID 原則實踐
 
-### 3.1. 指令解析邏輯 (Command Parsing)
-Dispatcher 採用簡單而嚴謹的解析規則：
-*   **語法**: `/[指令名] [參數1] [參數2]...`
-*   **範例**: `/stock 2330` -> 指令: `stock`, 參數: `['2330']`
-*   **容錯**: 若使用者輸入不帶 `/` 的文字，預設導向 `ChatService` 或回傳指令提示。
+本專案在設計上嚴格落實 SOLID 原則：
 
-### 3.2. 服務介面設計 (Service Interface)
-為了保證擴展性，所有服務繼承自 `BaseService`：
-```python
-class BaseService(ABC):
-    @abstractmethod
-    async def handle(self, user_id: str, args: List[str]) -> str:
-        """處理請求並回傳文字結果"""
-        pass
-```
+### 3.1. 單一職責原則 (SRP)
+*   **Service**: 只專注於業務邏輯流（獲取數據 -> 組裝 -> 分析），不負責「如何抓數據」或「Prompt 具體內容」。
+*   **PromptEngine**: 只負責讀取檔案與渲染模板，不涉及業務邏輯。
+*   **Dispatcher**: 只負責路由分發，不處理具體指令內容。
 
-### 3.3. API 端點設計
-*   **`POST /callback`**: 唯一的 Webhook 入口。
-    *   驗證 `X-Line-Signature`。
-    *   僅處理 `MessageEvent` 且類型為 `TextMessage` 的事件。
-    *   回應碼始終為 `200 OK`，處理失敗則回傳錯誤訊息給使用者。
+### 3.2. 開放封閉原則 (OCP)
+*   **新增指令**: 只需新增一個繼承 `BaseService` 的類別並註冊，**無需修改 Dispatcher 核心邏輯**。
+*   **修改 AI 行為**: 只需新增或修改 `src/lineaihelper/prompts/` 下的 Markdown 檔案，**無需修改 Python 程式碼**。
+*   **更換數據源**: 若要從 Yahoo 換成 Binance，只需實作 `BaseDataProvider` 的新子類別，**無需修改 Service 程式碼**。
 
----
+### 3.3. 里氏替換原則 (LSP)
+*   所有 `Service` 皆可互換地被 Dispatcher 呼叫。
+*   所有 `DataProvider` (Yahoo, Mock, Crypto) 皆可互換地被 Service 使用，確保單元測試時能輕鬆 Mock 外部 API。
 
-## 4. 資料庫設計 (Persistence)
+### 3.4. 介面隔離原則 (ISP)
+*   `BaseDataProvider` 定義了細粒度的介面（`get_quote`, `get_history`），避免 Service 依賴它不需要的方法。
 
-採用 PostgreSQL 儲存長期數據，透過 SQLAlchemy 管理。
-
-### 4.1. 查詢紀錄表 (query_logs)
-| 欄位 | 型別 | 說明 |
-| :--- | :--- | :--- |
-| `id` | BigInt (PK) | 唯一識別碼 |
-| `user_id` | String | LINE 使用者識別碼 |
-| `command` | String | 觸發的指令類型 (e.g., stock) |
-| `raw_text` | Text | 使用者原始輸入內容 |
-| `response` | Text | AI 回傳的結果內容 |
-| `created_at` | Timestamp | 請求時間 |
+### 3.5. 依賴反轉原則 (DIP)
+*   **High-level modules (Services) should not depend on low-level modules (YahooFinanceProvider). Both should depend on abstractions.**
+*   `StockService` 建構時透過 `__init__` 注入 `BaseDataProvider` (抽象介面)，而非在內部實例化具體的 Provider。
 
 ---
 
-## 5. 錯誤處理與日誌
+## 4. AI 工程化 (AI Engineering)
 
-### 5.1. 日誌策略 (Loguru)
-*   **格式**: `[時間] [等級] [模組] - 訊息`
-*   **輪換**: 每日輪換，保留 10 天，舊檔壓縮。
-*   **關鍵紀錄點**:
-    *   Webhook 接收與簽章驗證結果。
-    *   指令解析後的路由目標。
-    *   外部 API (Gemini/Yahoo) 呼叫成功與否及延遲時間。
+### 4.1. Prompt as Code
+將 Prompt 視為程式碼資產進行管理：
+*   **檔案化**: 儲存於 `src/lineaihelper/prompts/{service_name}/`。
+*   **格式**: 使用 Markdown + YAML Frontmatter。
+*   **模板**: 使用 Jinja2 (`{{ variable }}`) 進行動態變數注入。
 
-### 5.2. 異常回饋
-*   **未知指令**: 回傳「收到的指令無效，請輸入 /help 查看說明」。
-*   **服務逾時**: 回傳「AI 目前忙碌中，請稍後再試」。
-*   **無效參數**: 回傳「股票代碼格式錯誤 (範例: /stock 2330)」。
+### 4.2. 版本控制 (Versioning)
+*   每個 Prompt 檔案命名包含版本或用途（如 `v1.md`, `latest.md`）。
+*   在 YAML Header 中記錄 `version`, `author`, `model` 等元數據。
+*   Runtime Log 會記錄當次執行所使用的 Prompt 版本，便於追蹤 AI 幻覺問題。
+
+---
+
+## 5. 詳細設計
+
+### 5.1. 指令解析與分發
+*   **語法**: `.[指令] [參數]` (e.g., `.stock 2330`)
+*   **流程**:
+    1.  `Dispatcher` 接收文字。
+    2.  檢查 `.` 前綴。
+    3.  解析指令關鍵字 (`stock`)。
+    4.  查找對應 Service 實例。
+    5.  呼叫 `service.execute(args)`。
+
+### 5.2. 異常處理策略
+*   **ServiceError**: 業務邏輯錯誤（如「無此代碼」），回傳友善提示給使用者。
+*   **ExternalAPIError**: 外部依賴失敗（如「Yahoo API timeout」），記錄 Error Log 並回傳「系統忙碌中」。
+*   **Unhandled Exception**: 系統層級錯誤（Bug），由 FastAPI 全域攔截，回傳 500 並發送 Alert。
 
 ---
 
 ## 6. 技術棧 (Technology Stack)
-*   **核心**: Python 3.14+
-*   **框架**: FastAPI (ASGI)
-*   **AI**: Google Generative AI (Gemini 1.5/2.0)
-*   **數據**: yfinance (Yahoo Finance)
-*   **通訊**: line-bot-sdk-python
-*   **管理**: uv (Package & Env Manager)
-*   **伺服器**: Uvicorn ( ASGI Server)
+*   **Language**: Python 3.14
+*   **Framework**: FastAPI
+*   **Dependency Injection**: 手動注入 (Constructor Injection)
+*   **AI SDK**: Google GenAI (Gemini)
+*   **Prompt Engine**: Jinja2 + PyYAML
+*   **Linter**: Ruff
+*   **Type Checker**: Mypy (Strict mode)
+*   **Testing**: Pytest (Asyncio)
 
 ---
 
-## 7. 未來擴展藍圖 (Roadmap)
-1.  **多樣化指令**: 預計新增 `/weather`, `/translate`, `/news`。
-2.  **上下文記憶**: 透過資料庫儲存近期對話，讓 `/chat` 具備多輪對話能力。
-3.  **富媒體回覆**: 支援回傳 Line Flex Message 以提供更美觀的股市報價面板。
-4.  **背景任務**: 使用 `BackgroundTasks` 處理超長分析，避免 LINE Webhook 5 秒超時限制。
+## 7. 擴展藍圖 (Roadmap)
+
+1.  **Repository Pattern**: 實作 `PostgresRepository`，將資料存取邏輯從 Service 分離（Phase 3）。
+2.  **Service Registry**: 實作自動化註冊機制，透過 Decorator 自動掃描並註冊指令，消除 Dispatcher 中的靜態 Mapping。
+3.  **多輪對話 Context**: 在 `ChatService` 引入 `ConversationRepository`，實現具備記憶的對話體驗。

@@ -1,9 +1,11 @@
 import asyncio
+import uuid
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from google import genai
 from linebot.v3 import WebhookHandler
@@ -48,6 +50,18 @@ app = FastAPI(lifespan=lifespan)
 handler = WebhookHandler(settings.LINE_CHANNEL_SECRET)
 
 
+@app.middleware("http")
+async def add_trace_id_middleware(request: Request, call_next: Callable) -> Response:
+    """
+    為每個請求生成 Trace ID 並注入日誌上下文。
+    """
+    trace_id = request.headers.get("X-Trace-ID", str(uuid.uuid4()))
+    with logger.contextualize(trace_id=trace_id):
+        response: Response = await call_next(request)
+        response.headers["X-Trace-ID"] = trace_id
+        return response
+
+
 # --- 異常處理層 (Exception Handling Layer) ---
 
 
@@ -74,7 +88,20 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 @app.get("/")
 def read_root() -> dict:
-    return {"status": "ok", "message": "LineNexus (Async) is running."}
+    return {
+        "app": settings.APP_NAME,
+        "version": "2.1.0",
+        "environment": settings.ENVIRONMENT,
+        "status": "up",
+    }
+
+
+@app.get("/health")
+def health_check() -> dict:
+    """
+    健康檢查端點，支援 Liveness/Readiness Probes。
+    """
+    return {"status": "healthy", "service": settings.APP_NAME}
 
 
 @app.post("/callback")
