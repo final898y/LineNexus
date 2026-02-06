@@ -1,13 +1,13 @@
 import json
 import sys
-from typing import Any, Dict
+from typing import Any
 
 from loguru import logger
 
 from lineaihelper.config import settings
 
 
-def serialize(record: Dict[str, Any]) -> str:
+def serialize(record: Any) -> str:
     """
     將 Loguru 紀錄序列化為自定義 JSON 格式。
     """
@@ -34,11 +34,11 @@ def setup_logging() -> None:
 
     # 1. 配置控制台輸出 (Stdout)
     if settings.LOG_JSON:
-        # 使用自定義 sink 函數直接輸出 JSON，避免 Loguru 再次解析大括號
-        logger.add(
-            lambda msg: sys.stdout.write(serialize(msg.record) + "\n"),
-            level="INFO",
-        )
+        # 使用自定義 sink 函數直接輸出 JSON
+        def json_sink(msg: Any) -> None:
+            sys.stdout.write(serialize(msg.record) + "\n")
+
+        logger.add(json_sink, level="INFO")
     else:
         log_format = (
             "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
@@ -63,7 +63,7 @@ def setup_logging() -> None:
         encoding="utf-8",
         level="INFO",
         enqueue=True,
-        serialize=True,  # 使用 Loguru 內建的序列化
+        serialize=True,
     )
 
     logger.configure(extra={"trace_id": "system"})
