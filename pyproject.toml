@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "final898y", email = "final898y@gmail.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.121.3",
     "google-genai>=1.60.0",
@@ -14,6 +14,7 @@ dependencies = [
     "line-bot-sdk>=3.22.0",
     "loguru>=0.7.3",
     "mypy>=1.19.1",
+    "pandas-ta>=0.4.71b0",
     "pydantic-settings>=2.12.0",
     "pyyaml>=6.0.3",
     "yfinance>=1.1.0",
@@ -33,6 +34,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "pandas-stubs>=3.0.0.260204",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
