@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from google.genai import errors
 
 from lineaihelper.exceptions import ExternalAPIError, ServiceError
 from lineaihelper.services.chat_service import ChatService
@@ -29,7 +30,15 @@ async def test_chat_service_empty_args() -> None:
 @pytest.mark.asyncio
 async def test_chat_service_quota_error() -> None:
     mock_gemini = MagicMock()
-    mock_gemini.aio.models.generate_content.side_effect = Exception("quota exceeded")
+    # 模擬 ClientError 並包含 quota 字眼
+    mock_err = errors.ClientError(
+        code=429,
+        response_json={
+            "error": {"message": "Quota exceeded", "status": "RESOURCE_EXHAUSTED"}
+        },
+        response=None,
+    )
+    mock_gemini.aio.models.generate_content.side_effect = mock_err
     service = ChatService(mock_gemini)
 
     with pytest.raises(ExternalAPIError) as excinfo:

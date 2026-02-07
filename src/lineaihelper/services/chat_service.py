@@ -2,7 +2,7 @@ from typing import Optional
 
 from google import genai
 
-from lineaihelper.exceptions import ExternalAPIError, ServiceError
+from lineaihelper.exceptions import ExternalAPIError, ServiceError, handle_gemini_error
 from lineaihelper.prompt_engine import PromptEngine
 from lineaihelper.services.base_service import BaseService
 
@@ -18,7 +18,7 @@ class ChatService(BaseService):
 
     async def execute(self, args: str) -> str:
         if not args:
-            raise ServiceError("請提供聊天內容，例如: /chat 你好")
+            raise ServiceError("請提供聊天內容，例如: .chat 你好")
 
         prompt = self.prompt_engine.render("chat", {"message": args})
 
@@ -32,15 +32,4 @@ class ChatService(BaseService):
 
             return response.text
         except Exception as e:
-            if isinstance(e, ExternalAPIError):
-                raise
-
-            error_msg = str(e)
-            if "quota" in error_msg.lower():
-                raise ExternalAPIError(
-                    "AI 額度已達上限，請明天再試或稍後再撥。", original_exception=e
-                ) from e
-
-            raise ExternalAPIError(
-                "AI 暫時無法回應，請稍後再試。", original_exception=e
-            ) from e
+            handle_gemini_error(e)

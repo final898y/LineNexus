@@ -8,6 +8,7 @@ from google import genai
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
+    ApiException,
     AsyncApiClient,
     AsyncMessagingApi,
     Configuration,
@@ -20,9 +21,12 @@ from loguru import logger
 from lineaihelper.config import settings
 from lineaihelper.dispatcher import CommandDispatcher
 from lineaihelper.exception_handlers import (
+    business_exception_handler,
     global_exception_handler,
     invalid_signature_handler,
+    line_api_exception_handler,
 )
+from lineaihelper.exceptions import LineNexusError
 from lineaihelper.logging_config import setup_logging
 from lineaihelper.middlewares import add_trace_id_middleware
 
@@ -56,6 +60,8 @@ app.middleware("http")(add_trace_id_middleware)
 
 # 註冊 Exception Handlers
 app.add_exception_handler(InvalidSignatureError, invalid_signature_handler)
+app.add_exception_handler(ApiException, line_api_exception_handler)
+app.add_exception_handler(LineNexusError, business_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)
 
 
@@ -110,14 +116,20 @@ def handle_message(event: MessageEvent) -> None:
     async def process_and_reply() -> None:
         try:
             reply_text = await dispatcher.parse_and_execute(user_text)
-            await line_bot_api.reply_message(
+            response = await line_bot_api.reply_message_with_http_info(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
                     messages=[TextMessage(text=reply_text)],
                 )
             )
+            request_id = response.headers.get("x-line-request-id")
+            logger.info(f"訊息回覆成功 | Request ID: {request_id}")
+
+        except ApiException as e:
+            # 復用集中管理的處理邏輯 (傳入 None 作為 Request)
+            await line_api_exception_handler(None, e)
         except Exception as e:
-            logger.error(f"發送回覆訊息失敗: {e}")
+            logger.exception(f"發送回覆訊息時發生非預期錯誤: {e}")
 
     asyncio.create_task(process_and_reply())
 

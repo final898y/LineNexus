@@ -22,7 +22,7 @@ async def test_dispatch_handling_service_error() -> None:
     response = await dispatcher.parse_and_execute(".test args")
 
     # Assert
-    assert response == "⚠️ 自定義錯誤訊息"
+    assert response == "自定義錯誤訊息"
 
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ async def test_dispatch_handling_unexpected_error() -> None:
     response = await dispatcher.parse_and_execute(".test args")
 
     # Assert
-    assert "❌ 系統發生未知錯誤" in response
+    assert "系統發生未知錯誤" in response
 
 
 @pytest.mark.asyncio

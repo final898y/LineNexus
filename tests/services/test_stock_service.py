@@ -73,9 +73,9 @@ async def test_stock_service_data_fetch_error(mock_provider: MagicMock) -> None:
 
     service = StockService(mock_gemini, provider=mock_provider)
 
-    with pytest.raises(ServiceError) as excinfo:
+    with pytest.raises(ExternalAPIError) as excinfo:
         await service.execute("2330")
-    assert "資料檢索失敗" in str(excinfo.value)
+    assert "Provider Error" in str(excinfo.value)
 
 
 @pytest.mark.asyncio
