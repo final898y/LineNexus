@@ -34,7 +34,7 @@ class CommandDispatcher:
         command = parts[0].lower()
         args = parts[1] if len(parts) > 1 else ""
 
-        logger.info(f"Dispatching command: {command}")
+        logger.info("Dispatching command", extra={"command": command})
 
         try:
             service = self.services.get(command)
@@ -44,9 +44,21 @@ class CommandDispatcher:
                 return f"Unknown command: {command}, type .help for info."
         except LineNexusError as e:
             # 攔截自定義的業務邏輯錯誤
-            logger.warning(f"Service error in {command}: {e.message}")
+            logger.warning(
+                "Service error occurred",
+                extra={
+                    "command": command,
+                    "error": e.message,
+                },
+            )
             return f"{e.message}"
-        except Exception as e:
+        except Exception:
             # 攔截未預期的系統錯誤
-            logger.exception(f"Unexpected error in {command}: {e}")
+            logger.exception(
+                "Unexpected error in command",
+                extra={
+                    "command": command,
+                    "args": args,
+                },
+            )
             return "系統發生未知錯誤，請稍後再試或聯繫管理員。"

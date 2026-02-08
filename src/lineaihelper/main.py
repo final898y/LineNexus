@@ -108,7 +108,13 @@ def handle_message(event: MessageEvent) -> None:
     處理文字訊息事件
     """
     user_text = event.message.text.strip()
-    logger.info(f"收到訊息: {user_text}")
+    logger.info(
+        "收到使用者訊息",
+        extra={
+            "user_text": user_text,
+            "reply_token": event.reply_token,
+        },
+    )
 
     line_bot_api: AsyncMessagingApi = app.state.line_bot_api
     dispatcher: CommandDispatcher = app.state.dispatcher
@@ -123,13 +129,26 @@ def handle_message(event: MessageEvent) -> None:
                 )
             )
             request_id = response.headers.get("x-line-request-id")
-            logger.info(f"訊息回覆成功 | Request ID: {request_id}")
+            logger.info(
+                "訊息回覆成功",
+                extra={
+                    "line_request_id": request_id,
+                    "reply_token": event.reply_token,
+                    "user_text": user_text,
+                },
+            )
 
         except ApiException as e:
             # 復用集中管理的處理邏輯 (傳入 None 作為 Request)
             await line_api_exception_handler(None, e)
-        except Exception as e:
-            logger.exception(f"發送回覆訊息時發生非預期錯誤: {e}")
+        except Exception:
+            logger.exception(
+                "發送回覆訊息時發生非預期錯誤",
+                extra={
+                    "user_text": user_text,
+                    "reply_token": event.reply_token,
+                },
+            )
 
     asyncio.create_task(process_and_reply())
 

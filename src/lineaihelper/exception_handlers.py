@@ -11,7 +11,7 @@ async def invalid_signature_handler(
     request: Request, exc: InvalidSignatureError
 ) -> JSONResponse:
     """處理 LINE Webhook 簽章無效錯誤"""
-    logger.error(f"無效的 LINE 簽章 | {exc}")
+    logger.error("無效的 LINE 簽章", extra={"error": str(exc)})
     return JSONResponse(status_code=400, content={"detail": "Invalid signature"})
 
 
@@ -25,8 +25,12 @@ async def line_api_exception_handler(
     error_body = ErrorResponse.from_json(exc.body) if exc.body else "No body"
 
     logger.error(
-        f"LINE API 異常 | Status: {exc.status} | "
-        f"Request ID: {request_id} | Body: {error_body}"
+        "LINE API 異常",
+        extra={
+            "status": exc.status,
+            "request_id": request_id,
+            "body": error_body,
+        },
     )
 
     return JSONResponse(
@@ -46,8 +50,12 @@ async def business_exception_handler(request: Request, exc: Exception) -> JSONRe
 
     # 在 Log 中記錄詳細資訊，方便追蹤
     logger.warning(
-        f"業務邏輯異常 | 類型: {exc.__class__.__name__} | "
-        f"訊息: {exc.message} | 原始原因: {exc.original_exception}"
+        "業務邏輯異常",
+        extra={
+            "type": exc.__class__.__name__,
+            "message": exc.message,
+            "original_reason": str(exc.original_exception),
+        },
     )
     # 僅回傳對用戶有意義的訊息
     return JSONResponse(
@@ -60,5 +68,5 @@ async def business_exception_handler(request: Request, exc: Exception) -> JSONRe
 
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """全域異常攔截，作為最後一道防線"""
-    logger.exception(f"全域攔截到未處理異常: {exc}")
+    logger.exception("全域攔截到未處理異常", extra={"error": str(exc)})
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})

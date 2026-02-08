@@ -39,7 +39,14 @@ class PromptEngine:
 
             return body, metadata
         except Exception as e:
-            logger.error(f"Failed to load prompt {name}:{version}: {e}")
+            logger.error(
+                "Failed to load prompt",
+                extra={
+                    "name": name,
+                    "version": version,
+                    "error": str(e),
+                },
+            )
             raise
 
     def render(
@@ -52,16 +59,34 @@ class PromptEngine:
             # 先讀取 metadata 用於 logging
             body, metadata = self.get_prompt(name, version)
             ver_info = metadata.get("version", version)
-            logger.info(f"Rendering prompt [{name}] version: {ver_info}")
+            logger.info(
+                "Rendering prompt",
+                extra={
+                    "name": name,
+                    "version": ver_info,
+                },
+            )
 
             temp = self.env.from_string(body)
             return temp.render(**variables)
 
         except TemplateNotFound:
-            logger.error(f"Template not found: {name}/{version}.md")
+            logger.error(
+                "Template not found",
+                extra={
+                    "name": name,
+                    "version": version,
+                },
+            )
             raise
         except Exception as e:
-            logger.error(f"Error rendering prompt {name}: {e}")
+            logger.error(
+                "Error rendering prompt",
+                extra={
+                    "name": name,
+                    "error": str(e),
+                },
+            )
             raise
 
     def _parse_frontmatter(self, content: str) -> Tuple[Dict[str, Any], str]:
@@ -79,6 +104,6 @@ class PromptEngine:
                     body = parts[2].strip()
                     return metadata, body
             except Exception as e:
-                logger.warning(f"Failed to parse metadata: {e}")
+                logger.warning("Failed to parse metadata", extra={"error": str(e)})
 
         return {}, content
