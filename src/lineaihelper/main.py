@@ -19,6 +19,7 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from loguru import logger
 
 from lineaihelper.config import settings
+from lineaihelper.context import line_inbound_id_var, request_id_var, trace_id_var
 from lineaihelper.dispatcher import CommandDispatcher
 from lineaihelper.exception_handlers import (
     business_exception_handler,
@@ -91,9 +92,9 @@ async def callback(request: Request) -> str:
     """
     LINE Webhook 回呼入口
     """
-    signature = request.headers.get("X-Line-Signature")
+    signature = request.headers.get("x-line-signature")
     if not signature:
-        logger.warning("遺失 X-Line-Signature 標頭")
+        logger.warning("遺失 x-line-signature 標頭")
         raise HTTPException(status_code=400, detail="Missing signature")
 
     body = await request.body()
@@ -119,38 +120,52 @@ def handle_message(event: MessageEvent) -> None:
     line_bot_api: AsyncMessagingApi = app.state.line_bot_api
     dispatcher: CommandDispatcher = app.state.dispatcher
 
-    async def process_and_reply() -> None:
-        try:
-            reply_text = await dispatcher.parse_and_execute(user_text)
-            response = await line_bot_api.reply_message_with_http_info(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text=reply_text)],
+    # 先擷取目前的 Context 變數，用於傳遞給背景任務
+    t_id = trace_id_var.get()
+    r_id = request_id_var.get()
+    l_in_id = line_inbound_id_var.get()
+
+    async def process_and_reply(
+        trace_id: str, request_id: str, line_inbound_id: str
+    ) -> None:
+        # 在背景任務中重新注入 Context
+        with logger.contextualize(
+            trace_id=trace_id,
+            request_id=request_id,
+            line_inbound_id=line_inbound_id,
+        ):
+            try:
+                reply_text = await dispatcher.parse_and_execute(user_text)
+                response = await line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text=reply_text)],
+                    )
                 )
-            )
-            request_id = response.headers.get("x-line-request-id")
-            logger.info(
-                "訊息回覆成功",
-                extra={
-                    "line_request_id": request_id,
-                    "reply_token": event.reply_token,
-                    "user_text": user_text,
-                },
-            )
+                # LINE 回傳的 Request ID（發送回覆的追蹤碼）
+                line_outbound_id = response.headers.get("x-line-request-id")
+                logger.info(
+                    "訊息回覆成功",
+                    extra={
+                        "line_outbound_id": line_outbound_id,
+                        "reply_token": event.reply_token,
+                        "user_text": user_text,
+                    },
+                )
 
-        except ApiException as e:
-            # 復用集中管理的處理邏輯 (傳入 None 作為 Request)
-            await line_api_exception_handler(None, e)
-        except Exception:
-            logger.exception(
-                "發送回覆訊息時發生非預期錯誤",
-                extra={
-                    "user_text": user_text,
-                    "reply_token": event.reply_token,
-                },
-            )
+            except ApiException as e:
+                # 復用集中管理的處理邏輯 (傳入 None 作為 Request)
+                await line_api_exception_handler(None, e)
+            except Exception:
+                logger.exception(
+                    "發送回覆訊息時發生非預期錯誤",
+                    extra={
+                        "user_text": user_text,
+                        "reply_token": event.reply_token,
+                    },
+                )
 
-    asyncio.create_task(process_and_reply())
+    asyncio.create_task(process_and_reply(t_id, r_id, l_in_id))
 
 
 def start() -> None:

@@ -55,9 +55,15 @@ Agent 必須嚴格執行以下流程，以確保代碼庫的可追溯性與整�
 *   **語意化版本 (SemVer)**: 內部邏輯變更遵循主版本.次版本.修訂版規範。
 
 ### 4.3. 錯誤處理與可觀測性 (Error Handling & Observability)
-*   **結構化日誌**: 使用 `loguru` 並透過 `logger.bind()` 注入 Context (如 Request ID, User ID)。
-*   **異常體系**: 禁止直接使用廣義 `Exception`。必須根據業務邏輯定義具備語意化的自定義異常類。
-*   **優雅失敗**: API 必須捕捉所有未處理異常，並回傳符合 RFC 7807 規範的標準化錯誤回應。
+*   **結構化日誌 (Structured Logging)**:
+    *   **統一框架**: 全專案使用 `loguru`。
+    *   **禁止行為**: 嚴禁使用 `print()`；**嚴禁在日誌訊息中使用 f-string 拼接變數**。
+    *   **欄位規範**: 必須透過 `extra` 參數傳遞動態變數（如 `extra={"user_id": 123}`）。
+    *   **追蹤機制**: 每一筆日誌必須包含 `trace_id`；區分 `trace_id` (全鏈路) 與 `request_id` (單次請求)。
+*   **異常處理 (Exception Handling)**:
+    *   **異常體系**: 禁止直接使用廣義 `Exception`。必須根據業務邏輯定義具備語意化的自定義異常類。
+    *   **捕捉規範**: 擷取 Exception 時務必使用 `logger.exception()`，以自動捕捉完整的 Stack Trace。
+    *   **優雅失敗**: API 必須捕捉所有未處理異常，並回傳符合 RFC 7807 規範的標準化錯誤回應。
 
 ### 4.4. 資安規範 (Security Standards)
 *   **機敏資訊**: 嚴禁將 API Key 或 Token 寫入代碼或日誌。所有金鑰必須透過環境變數注入。
